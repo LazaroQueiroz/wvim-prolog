@@ -9,8 +9,7 @@
 :- use_module(library(system)).
 :- use_module(library(apply)).
 :- use_module('../src/Editor/editorState.pl').
-:- use_module('../src/Editor/cursor.pl').
-:- use_module('../src/Editor/extended_piece_table.pl').
+:- use_module('renderer.pl').
 
 % (Previous editor state predicates go here...)
 % Assuming editor_state/13 and helpers already defined above
@@ -80,14 +79,4 @@ replace_at(I, New, [X|Xs], [X|Rest]) :-
 is_running(editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)) :- !, fail.
 is_running(_) :- true.
 
-% ----- Placeholder Renderer -----
-render(State) :-
-    tty_clear,
-    State = editor_state(_, PieceTable, Cursor, _, _, _, _, _, _, _, _, _, _),
-    extended_piece_table_to_string(PieceTable, Str),
-    split_string(Str, "\n", "", Lines),
-    forall(member(Line, Lines), writeln(Line)),
-    cursor(Y, X) = Cursor,
-    move_cursor_to(X, Y),
-    flush_output.
 
