@@ -1,32 +1,93 @@
+% ======================
+% PROLOG: Editor State + Main Event Loop
+% ======================
+
+:- module(editor_main, [start_editor/0]).
+
+:- use_module(library(readutil)).
 :- use_module(library(tty)).
+:- use_module(library(system)).
+:- use_module(library(apply)).
+:- use_module('../src/Editor/editorState.pl').
+:- use_module('../src/Editor/cursor.pl').
+:- use_module('../src/Editor/extended_piece_table.pl').
 
-start :-
-    tty_clear(),
-    loop(5, 5),
-    halt.
+% (Previous editor state predicates go here...)
+% Assuming editor_state/13 and helpers already defined above
 
-loop(X, Y) :-
-    move_cursor_to(X, Y),
+% ----- Start Editor -----
+start_editor :-
+    tty_size(Rows, Cols),
+    default_editor_state(Rows, Cols, "", EditorState),
+    event_loop([EditorState], 0).
+
+% ----- Get Terminal Size -----
+get_terminal_size(Rows, Cols) :-
+    shell('stty size', SizeOut),
+    read_line_to_codes(user_input, Codes),
+    atom_codes(Atom, Codes),
+    atomic_list_concat([R, C], ' ', Atom),
+    atom_number(R, Rows),
+    atom_number(C, Cols).
+
+% ----- Event Loop -----
+event_loop(States, Index) :-
+    nth0(Index, States, CurrentState),
+    render(CurrentState),
     get_single_char(Code),
-    clear_cursor(X, Y),
-    handle_input(Code, X, Y, NewX, NewY),
-    loop(NewX, NewY).
+    handle_input(Code, CurrentState, States, Index, NewStates, NewIndex),
+    !,
+    event_loop(NewStates, NewIndex).
 
-% Apaga o cursor anterior (colocando espaço)
-clear_cursor(X, Y) :-
-    format("\e[~d;~dH ", [Y, X]),  % vai até posição e escreve espaço
+event_loop(_, Index) :-
+    Index =:= -1, 
+    format("~nExiting PrologVim~n", []).
+
+% ----- Input Handler -----
+handle_input("[", _, States, Index, States, NewIndex) :-
+    NewIndex is max(0, Index - 1).
+
+handle_input("]", _, States, Index, States, NewIndex) :-
+    length(States, Len),
+    NewIndex is min(Len - 1, Index + 1).
+
+handle_input("{", CurrentState, States, Index, NewStates, NewIndex) :-
+    CurrentState = editor_state(_, _, _, Viewport, _, _, _, _, _, _, _, _, _),
+    Viewport = viewport(Rows, Cols),
+    default_editor_state(Rows, Cols, "", NewState),
+    append(States, [NewState], NewStates),
+    length(NewStates, L),
+    NewIndex is L - 1.
+
+handle_input(Input, CurrentState, States, Index, NewStates, Index) :-
+    handle_key_press(CurrentState, Input, NewState),
+    % update_editor_viewport(NewState1, NewState),
+    replace_at(Index, NewState, States, NewStates).
+
+handle_key_press(State, Char, NewState) :-
+    member(Char, [104, 106, 107, 108, 113]),
+    update_editor_cursor(State, Char, NewState).
+
+
+% ----- Replace At Index -----
+replace_at(0, New, [_|Xs], [New|Xs]).
+replace_at(I, New, [X|Xs], [X|Rest]) :-
+    I > 0,
+    I1 is I - 1,
+    replace_at(I1, New, Xs, Rest).
+
+% ----- Is Running? -----
+is_running(editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)) :- !, fail.
+is_running(_) :- true.
+
+% ----- Placeholder Renderer -----
+render(State) :-
+    tty_clear,
+    State = editor_state(_, PieceTable, Cursor, _, _, _, _, _, _, _, _, _, _),
+    extended_piece_table_to_string(PieceTable, Str),
+    split_string(Str, "\n", "", Lines),
+    forall(member(Line, Lines), writeln(Line)),
+    cursor(Y, X) = Cursor,
+    move_cursor_to(X, Y),
     flush_output.
-
-% Move cursor do terminal para posição (X, Y)
-move_cursor_to(X, Y) :-
-    format("\e[~d;~dH", [Y, X]),
-    flush_output.
-
-% h/j/k/l = 104/106/107/108  | q = 113
-handle_input(104, X, Y, NX, Y) :- NX is max(1, X - 1). % h
-handle_input(108, X, Y, NX, Y) :- NX is X + 1.         % l
-handle_input(107, X, Y, X, NY) :- NY is max(1, Y - 1). % k
-handle_input(106, X, Y, X, NY) :- NY is Y + 1.         % j
-handle_input(113, _, _, _, _) :- halt.     % q = quit
-handle_input(_, X, Y, X, Y).  % outras teclas = sem ação
 
