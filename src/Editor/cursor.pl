@@ -10,22 +10,22 @@ move_cursor_to(X, Y) :-
     format("\e[~d;~dH", [Y, X]),
     flush_output.
 
-move_cursor(104, Cursor, LineSizes, NewCursor) :-
+move_cursor("h", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
   NY is max(1, Y - 1),
   NewCursor = cursor(X, NY).
 
-move_cursor(106, Cursor, LineSizes, NewCursor) :-
+move_cursor("j", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
   NX is X + 1,
   NewCursor = cursor(NX, Y).
 
-move_cursor(107, Cursor, LineSizes, NewCursor) :-
+move_cursor("k", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
   NX is max(1, X - 1),
   NewCursor = cursor(NX, Y).
 
-move_cursor(108, Cursor, LineSizes, NewCursor) :-
+move_cursor("l", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
   NY is Y + 1,
   NewCursor = cursor(X, NY).

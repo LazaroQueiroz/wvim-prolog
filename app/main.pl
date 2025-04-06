@@ -9,6 +9,7 @@
 :- use_module(library(system)).
 :- use_module(library(apply)).
 :- use_module('../src/Editor/editorState.pl').
+:- use_module('../src/Editor/mode_manager.pl').
 :- use_module('renderer.pl').
 
 % (Previous editor state predicates go here...)
@@ -16,6 +17,7 @@
 
 % ----- Start Editor -----
 start_editor :-
+    tty_clear,
     tty_size(Rows, Cols),
     default_editor_state(Rows, Cols, "", EditorState),
     event_loop([EditorState], 0).
@@ -34,7 +36,10 @@ event_loop(States, Index) :-
     nth0(Index, States, CurrentState),
     render(CurrentState),
     get_single_char(Code),
-    handle_input(Code, CurrentState, States, Index, NewStates, NewIndex),
+    char_code(Char, Code), 
+    atom_string(Char, Input), 
+    handle_mode(CurrentState, Input, NewState),
+    replace_at(Index, NewState, States, NewStates),
     !,
     event_loop(NewStates, NewIndex).
 

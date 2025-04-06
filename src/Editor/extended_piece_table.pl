@@ -29,8 +29,9 @@ create_extended_piece_table(Text, piece_table([piece(original, 0, Len)], Text, "
     get_lines_sizes(Text, 0, [], LineSizes).
 
 % insert_text(+PieceTable, -NewPieceTable)
-insert_text(piece_table(Pieces, Orig, Add, "", Index, Lines), piece_table(Pieces, Orig, Add, "", Index, Lines)).
-insert_text(piece_table(Pieces, Orig, Add, Insert, Index, Lines), piece_table(NewPieces, Orig, NewAdd, "", Index, Lines)) :-
+insert_text([Pieces, Orig, Add, "", Index, Lines], [Pieces, Orig, Add, "", Index, Lines]).
+insert_text([Pieces, Orig, Add, Insert, Index, Lines], [NewPieces, Orig, NewAdd, "", Index, Lines]) :-
+    writeln("inserting text")
     string_length(Add, AddLen),
     string_length(Insert, InsertLen),
     string_concat(Add, Insert, NewAdd),
@@ -87,7 +88,7 @@ extended_table_fold([[Type, Start, Len]|Rest], Orig, Add, Insert, Index, Acc, Re
         sub_string(S, Mid, _, 0, Post),
         string_concat(Pre, Insert, Temp),
         string_concat(Temp, Post, Full)
-    ; Full = S),
+    ; (Upper =:= Index) -> string_concat(S, Insert, Full) ; Full = S),
     string_concat(Acc, Full, Next),
     extended_table_fold(Rest, Orig, Add, Insert, Index, Next, Result).
 
@@ -129,11 +130,13 @@ update_lines_sizes("\b", cursor(X, Y), LineSizes, New) :-
     NewSize is Cur - 1,
     append(Before, [NewSize|After], New).
 update_lines_sizes(_, cursor(X, _), LineSizes, New) :-
+    writeln(LineSizes),
     split_at(X, LineSizes, Before, [Cur|After]),
     NewSize is Cur + 1,
     append(Before, [NewSize|After], New).
 
 % Helper: split_at(+Index, +List, -Before, -After)
-split_at(0, L, [], L).
-split_at(N, [H|T], [H|B], A) :- N > 0, N1 is N - 1, split_at(N1, T, B, A).
+split_at(0, L, Before, L) :- Before = [].
+split_at(N, [H|T], [H|B], A) :- 
+  N > 0, N1 is N - 1, split_at(N1, T, B, A).
 

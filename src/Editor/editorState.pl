@@ -46,7 +46,7 @@ default_editor_state(Rows, Cols, Filename, EditorState) :-
     PieceTable = [[[original, 0, 0]], "", "", "", 0, [0]],
     Cursor = cursor(0, 0),
     % default_viewport(Rows, Cols, Viewport),
-    Viewport = [0, 0, 0, 0],
+    Viewport = [Rows, Cols, 0, 0],
     FileStatus = saved,
     StatusBar = status_bar(no_exception, ""),
     EditorState = editor_state(
