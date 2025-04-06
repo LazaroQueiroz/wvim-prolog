@@ -43,7 +43,7 @@ file_status(not_saved).
 % ----- Default Editor State -----
 default_editor_state(Rows, Cols, Filename, EditorState) :-
     % create_extended_piece_table("", PieceTable),
-    PieceTable = [[[original, 0, 0]], "", "", "", 0, [0]],
+    PieceTable = [[piece(original, 0, 0)], "", "", "", 0, [0]],
     Cursor = cursor(0, 0),
     % default_viewport(Rows, Cols, Viewport),
     Viewport = [Rows, Cols, 0, 0],

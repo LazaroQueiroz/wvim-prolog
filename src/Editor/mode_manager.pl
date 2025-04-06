@@ -13,7 +13,7 @@
 ]).
 
 :- use_module('editorState.pl').
-:- use_module(extended_piece_table).
+:- use_module('extended_piece_table.pl').
 
 % ----- Entry Point -----
 handle_mode(State, Input, NewState) :-
@@ -38,7 +38,7 @@ handle_normal_mode(State, "/", NewState) :- switch_mode(State, substitution, fal
 handle_normal_mode(State, Input, NewState) :- update_editor_cursor(State, Input, NewState).
 
 % Visual Mode Handler
-handle_visual_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
+handle_visual_mode(State, "\u001B", NewState) :- switch_mode(State, normal, false, NewState).
 handle_visual_mode(State, "v", State) :- State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
     PT = piece_table(_, _, _, _, _, Lines),
     cursor_xy_to_string_index(Cursor, Lines, 0, 0, Index),
@@ -50,9 +50,14 @@ handle_visual_mode(State, "v", State) :- State = editor_state(_, PT, Cursor, Vie
 handle_visual_mode(State, Input, NewState) :- update_editor_cursor(State, Input, NewState).
 
 % Insert Mode Handler
-handle_insert_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
-handle_insert_mode(State, "\b", NewState) :- handle_delete(State, NewState).
-handle_insert_mode(State, Input, NewState) :- handle_insert(State, Input, NewState).
+handle_insert_mode(State, "\u001B", NewState) :- 
+  State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
+  insert_text(PT, NewPT),
+  AuxiliaryState = editor_state(M, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
+  switch_mode(AuxiliaryState, normal, false, NewState).
+handle_insert_mode(State, "\b", NewState) :- handle_delete(State, NewState), !.
+handle_insert_mode(State, Input, NewState) :- 
+  handle_insert(State, Input, NewState).
 
 % Replace Mode Handler
 handle_replace_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
@@ -91,6 +96,7 @@ handle_insert(State, Input, NewState) :-
     update_editor_cursor(AuxiliaryState, "l", NewState).
 
 % Handle delete
+handle_delete(editor_state(M, [Pieces, Orig, Add, "", Index, LinesSizes], ), NewState) :- NewState = State.  % Placeholder
 handle_delete(State, NewState) :- NewState = State.  % Placeholder
 
 % Handle replace

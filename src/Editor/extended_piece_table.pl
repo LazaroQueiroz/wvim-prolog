@@ -31,7 +31,6 @@ create_extended_piece_table(Text, piece_table([piece(original, 0, Len)], Text, "
 % insert_text(+PieceTable, -NewPieceTable)
 insert_text([Pieces, Orig, Add, "", Index, Lines], [Pieces, Orig, Add, "", Index, Lines]).
 insert_text([Pieces, Orig, Add, Insert, Index, Lines], [NewPieces, Orig, NewAdd, "", Index, Lines]) :-
-    writeln("inserting text")
     string_length(Add, AddLen),
     string_length(Insert, InsertLen),
     string_concat(Add, Insert, NewAdd),
@@ -76,7 +75,7 @@ extended_piece_table_to_string([Pieces, Orig, Add, Insert, Index, _], Result) :-
 teste_print(String) :- writeln(String).
 
 extended_table_fold([], _, _, _, _, Acc, Acc).
-extended_table_fold([[Type, Start, Len]|Rest], Orig, Add, Insert, Index, Acc, Result) :-
+extended_table_fold([piece(Type, Start, Len)|Rest], Orig, Add, Insert, Index, Acc, Result) :-
     ( Type = original -> sub_string(Orig, Start, Len, _, S)
     ; Type = add      -> sub_string(Add, Start, Len, _, S)),
     string_length(Acc, Pos),
