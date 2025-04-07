@@ -31,14 +31,21 @@ handle_mode_dispatch(_, State, _, State).
 % Normal Mode Handler
 % cursor_xy_to_string_index(+Cursor, +LineSizes, +Acc, +LineIndex, -Index)
 handle_normal_mode(State, "i", NewState) :- 
-  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
-  PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
-  cursor(X, Y) = Cursor,
-  cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, NewInsertStartIndex), 
-  NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
-  AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
-  switch_mode(AuxiliaryState, insert, false, NewState).
-handle_normal_mode(State, "a", NewState) :- switch_mode(State, insert, true, NewState).
+    State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
+    cursor(X, Y) = Cursor,
+    cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, NewInsertStartIndex), 
+    NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
+    AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    switch_mode(AuxiliaryState, insert, false, NewState).
+handle_normal_mode(State, "a", NewState) :- 
+    State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
+    cursor(X, Y) = Cursor,
+    cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, NewInsertStartIndex), 
+    NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
+    AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    switch_mode(AuxiliaryState, insert, false, NewState).
 handle_normal_mode(State, "v", NewState) :- switch_mode(State, visual, false, NewState).
 handle_normal_mode(State, "R", NewState) :- switch_mode(State, replace, false, NewState).
 handle_normal_mode(State, ":", NewState) :- switch_mode(State, command, false, NewState).
