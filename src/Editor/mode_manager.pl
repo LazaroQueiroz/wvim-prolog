@@ -29,7 +29,15 @@ handle_mode_dispatch(command, State, Input, NewState) :- handle_command_mode(Sta
 handle_mode_dispatch(_, State, _, State).
 
 % Normal Mode Handler
-handle_normal_mode(State, "i", NewState) :- switch_mode(State, insert, false, NewState).
+% cursor_xy_to_string_index(+Cursor, +LineSizes, +Acc, +LineIndex, -Index)
+handle_normal_mode(State, "i", NewState) :- 
+  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+  PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
+  cursor(X, Y) = Cursor,
+  cursor_xy_to_string_index(Cursor, LineSizes, 0, X, NewInsertStartIndex), 
+  NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
+  AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+  switch_mode(AuxiliaryState, insert, false, NewState).
 handle_normal_mode(State, "a", NewState) :- switch_mode(State, insert, true, NewState).
 handle_normal_mode(State, "v", NewState) :- switch_mode(State, visual, false, NewState).
 handle_normal_mode(State, "R", NewState) :- switch_mode(State, replace, false, NewState).
@@ -50,9 +58,11 @@ handle_visual_mode(State, "v", State) :- State = editor_state(_, PT, Cursor, Vie
 handle_visual_mode(State, Input, NewState) :- update_editor_cursor(State, Input, NewState).
 
 % Insert Mode Handler
-handle_insert_mode(State, "\u001B", NewState) :- 
+handle_insert_mode(State, "\e", NewState) :- 
+  writeln("changin to NORMAL MODE"),
   State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   insert_text(PT, NewPT),
+  writeln("changin to NORMAL MODE after insert"),
   AuxiliaryState = editor_state(M, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   switch_mode(AuxiliaryState, normal, false, NewState).
 handle_insert_mode(State, "\b", NewState) :- handle_delete(State, NewState), !.
@@ -88,15 +98,20 @@ handle_command_mode(State, Input, NewState) :-
 
 % Handle insert
 handle_insert(State, Input, NewState) :-
-    State = editor_state(M, [Pieces, Orig, Add, InsertBuf, Index, LineSizes], Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
     string_concat(InsertBuf, Input, NewInsert),
     update_lines_sizes(Input, Cursor, LineSizes, NewLines),
-    NewPT = [Pieces, Orig, Add, NewInsert, Index, NewLines],
+    NewPT = piece_table(Pieces, Orig, Add, NewInsert, Index, NewLines),
     AuxiliaryState = editor_state(M, NewPT, Cursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search),
-    update_editor_cursor(AuxiliaryState, "l", NewState).
+    get_direction(Input, Direction),
+    update_editor_cursor(AuxiliaryState, Direction, NewState).
+
+get_direction("\r", "\r").
+get_direction("\b", "\b").
+get_direction(Input, "l").
+
 
 % Handle delete
-handle_delete(editor_state(M, [Pieces, Orig, Add, "", Index, LinesSizes], ), NewState) :- NewState = State.  % Placeholder
 handle_delete(State, NewState) :- NewState = State.  % Placeholder
 
 % Handle replace

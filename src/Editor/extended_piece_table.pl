@@ -29,8 +29,9 @@ create_extended_piece_table(Text, piece_table([piece(original, 0, Len)], Text, "
     get_lines_sizes(Text, 0, [], LineSizes).
 
 % insert_text(+PieceTable, -NewPieceTable)
-insert_text([Pieces, Orig, Add, "", Index, Lines], [Pieces, Orig, Add, "", Index, Lines]).
-insert_text([Pieces, Orig, Add, Insert, Index, Lines], [NewPieces, Orig, NewAdd, "", Index, Lines]) :-
+insert_text(piece_table(Pieces, Orig, Add, "", Index, Lines), piece_table(Pieces, Orig, Add, "", Index, Lines)).
+insert_text(piece_table(Pieces, Orig, Add, Insert, Index, Lines), piece_table(NewPieces, Orig, NewAdd, "", Index, Lines)) :-
+    writeln("starting text insertion")
     string_length(Add, AddLen),
     string_length(Insert, InsertLen),
     string_concat(Add, Insert, NewAdd),
@@ -69,7 +70,7 @@ split_piece(N, piece(Type, Start, Len), [], [piece(Type, Start, Len)]) :- N =< 0
 split_piece(N, piece(Type, Start, Len), [piece(Type, Start, Len)], []) :- N >= Len.
 
 % extended_piece_table_to_string(+PieceTable, -String)
-extended_piece_table_to_string([Pieces, Orig, Add, Insert, Index, _], Result) :-
+extended_piece_table_to_string(piece_table(Pieces, Orig, Add, Insert, Index, _), Result) :-
     extended_table_fold(Pieces, Orig, Add, Insert, Index, "", Result).
 
 teste_print(String) :- writeln(String).
@@ -114,7 +115,7 @@ get_lines_sizes(['\n'|T], Len, Acc, Sizes) :- get_lines_sizes(T, 0, [Len|Acc], S
 get_lines_sizes([_|T], Len, Acc, Sizes) :- Len1 is Len + 1, get_lines_sizes(T, Len1, Acc, Sizes).
 
 % update_lines_sizes(+Input, +Cursor, +LineSizes, -NewSizes)
-update_lines_sizes("\n", cursor(X, Y), LineSizes, New) :-
+update_lines_sizes("\r", cursor(X, Y), LineSizes, New) :-
     split_at(X, LineSizes, Before, [Cur|After]),
     Y1 is Y,
     Y2 is Cur - Y,
@@ -129,7 +130,6 @@ update_lines_sizes("\b", cursor(X, Y), LineSizes, New) :-
     NewSize is Cur - 1,
     append(Before, [NewSize|After], New).
 update_lines_sizes(_, cursor(X, _), LineSizes, New) :-
-    writeln(LineSizes),
     split_at(X, LineSizes, Before, [Cur|After]),
     NewSize is Cur + 1,
     append(Before, [NewSize|After], New).

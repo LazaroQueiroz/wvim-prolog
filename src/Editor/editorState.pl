@@ -43,7 +43,7 @@ file_status(not_saved).
 % ----- Default Editor State -----
 default_editor_state(Rows, Cols, Filename, EditorState) :-
     % create_extended_piece_table("", PieceTable),
-    PieceTable = [[piece(original, 0, 0)], "", "", "", 0, [0]],
+    PieceTable = piece_table([piece(original, 0, 0)], "", "", "", 0, [0]),
     Cursor = cursor(0, 0),
     % default_viewport(Rows, Cols, Viewport),
     Viewport = [Rows, Cols, 0, 0],
@@ -68,7 +68,7 @@ editor_state_from_file(Content, Rows, Cols, Filename, EditorState) :-
 
 % ----- Update Cursor in Editor State -----
 update_editor_cursor(editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search), Direction, UpdatedState) :-
-    PT = [_, _, _, _, _, LineSizes],
+    PT = piece_table(_, _, _, _, _, LineSizes),
     ( M = insert -> true ; true ),  % mode check placeholder
     move_cursor(Direction, C, LineSizes, NewCursor),
     UpdatedState = editor_state(M, PT, NewCursor, V, FS, FN, SB, CB, U, R, VS, Copy, Search).

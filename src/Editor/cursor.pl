@@ -30,3 +30,28 @@ move_cursor("l", Cursor, LineSizes, NewCursor) :-
   NY is Y + 1,
   NewCursor = cursor(X, NY).
 
+move_cursor("\r", Cursor, LineSizes, NewCursor) :-
+  writeln("breaking line"),
+  cursor(X, Y) = Cursor,
+  NX is X + 1,
+  NewCursor = cursor(NX, 0).
+
+move_cursor("\b", Cursor, LineSizes, NewCursor) :-
+  Y =\= 0,
+  cursor(X, Y) = Cursor,
+  NY = Y - 1,
+  NewCursor = cursor(X, NY).
+
+move_cursor("\b", Cursor, LineSizes, NewCursor) :-
+  Y =:= 0,
+  cursor(X, Y) = Cursor,
+  NX is max(0, X - 1),
+  PreviousLine = nth0(NX, LineSizes),
+  NY is PreviousLine - 1,
+  NewCursor = cursor(NX, NY).
+
+move_cursor(_, Cursor, LineSizes, NewCursor) :-
+  cursor(X, Y) = Cursor,
+  NY is Y + 1,
+  NewCursor = cursor(X, NY).
+
