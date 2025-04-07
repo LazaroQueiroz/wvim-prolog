@@ -13,21 +13,25 @@ render(State) :-
 
 render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename) :-
   [Rows, Columns, _, _] = Viewport,
-  move_cursor_to(0, Rows),
+  move_cursor_to(1, Rows),
   write(Mode), write(" | "),
   write(Cursor), write(" | "),
   piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertIndex, LineSizes) = PieceTable,
-  write(PieceTable).
+  write(LineSizes), write(" | "), 
+  write(InsertIndex), write(" | "),
+  write(Rows), write(" | "), write(Columns).
 
 render_cursor(Cursor) :-
     cursor(X, Y) = Cursor,
-    move_cursor_to(Y, X),
+    NX is X + 1,
+    NY is Y + 1,
+    move_cursor_to(NY, NX),
     flush_output.
 
 render_viewport(PieceTable, Viewport) :-
-    move_cursor_to(0, 0),
+    move_cursor_to(1, 1),
     extended_piece_table_to_string(PieceTable, Str),
-    split_string(Str, "\n", "", Lines),
+    split_string(Str, "\r", "", Lines),
     forall(member(Line, Lines), writeln(Line)).
      
 

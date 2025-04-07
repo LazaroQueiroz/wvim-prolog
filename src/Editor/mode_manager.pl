@@ -34,7 +34,9 @@ handle_normal_mode(State, "i", NewState) :-
   State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
   PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
   cursor(X, Y) = Cursor,
-  cursor_xy_to_string_index(Cursor, LineSizes, 0, X, NewInsertStartIndex), 
+  writeln(State),
+  writeln(Cursor),
+  cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, NewInsertStartIndex), 
   NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
   AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
   switch_mode(AuxiliaryState, insert, false, NewState).
@@ -59,9 +61,7 @@ handle_visual_mode(State, Input, NewState) :- update_editor_cursor(State, Input,
 
 % Insert Mode Handler
 handle_insert_mode(State, "\e", NewState) :- 
-  writeln("changin to NORMAL MODE"),
   State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
-  writeln("changin to NORMAL MODE before insert"),
   insert_text(PT, NewPT),
   AuxiliaryState = editor_state(M, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   switch_mode(AuxiliaryState, normal, false, NewState).

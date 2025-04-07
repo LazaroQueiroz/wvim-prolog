@@ -12,7 +12,7 @@ move_cursor_to(X, Y) :-
 
 move_cursor("h", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
-  NY is max(1, Y - 1),
+  NY is max(0, Y - 1),
   NewCursor = cursor(X, NY).
 
 move_cursor("j", Cursor, LineSizes, NewCursor) :-
@@ -22,7 +22,7 @@ move_cursor("j", Cursor, LineSizes, NewCursor) :-
 
 move_cursor("k", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
-  NX is max(1, X - 1),
+  NX is max(0, X - 1),
   NewCursor = cursor(NX, Y).
 
 move_cursor("l", Cursor, LineSizes, NewCursor) :-
@@ -31,7 +31,6 @@ move_cursor("l", Cursor, LineSizes, NewCursor) :-
   NewCursor = cursor(X, NY).
 
 move_cursor("\r", Cursor, LineSizes, NewCursor) :-
-  writeln("breaking line"),
   cursor(X, Y) = Cursor,
   NX is X + 1,
   NewCursor = cursor(NX, 0).

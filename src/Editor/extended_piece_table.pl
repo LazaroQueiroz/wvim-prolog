@@ -31,13 +31,12 @@ create_extended_piece_table(Text, piece_table([piece(original, 0, Len)], Text, "
 % insert_text(+PieceTable, -NewPieceTable)
 insert_text(piece_table(Pieces, Orig, Add, "", Index, Lines), piece_table(Pieces, Orig, Add, "", Index, Lines)).
 insert_text(piece_table(Pieces, Orig, Add, Insert, Index, Lines), piece_table(NewPieces, Orig, NewAdd, "", Index, Lines)) :-
-    writeln("starting text insertion")
     string_length(Add, AddLen),
     string_length(Insert, InsertLen),
     string_concat(Add, Insert, NewAdd),
     NewPiece = piece(add, AddLen, InsertLen),
     split_piece_collection(Index, Pieces, Before, After),
-    append(Before, [NewPiece|After], NewPieces).
+    append(Before, [NewPiece|After], NewPieces). 
 
 % delete_text(+StartIndex, +Length, +PieceTable, -NewPieceTable)
 delete_text(Start, Len, piece_table(Pieces, Orig, Add, Insert, Index, Lines), piece_table(NewPieces, Orig, Add, Insert, NewIndex, Lines)) :-
@@ -49,16 +48,15 @@ delete_text(Start, Len, piece_table(Pieces, Orig, Add, Insert, Index, Lines), pi
     NewIndex is Index - Len.
 
 % split_piece_collection(+Index, +Pieces, -Before, -After)
-split_piece_collection(0, Pieces, [], Pieces).
+split_piece_collection(0, Pieces, Pieces, []).
 split_piece_collection(_, [], [], []).
 split_piece_collection(N, [P|Ps], [P|Before], After) :-
     P = piece(_, _, Len),
     N >= Len,
     N1 is N - Len,
     split_piece_collection(N1, Ps, Before, After).
-split_piece_collection(N, [P|Ps], Before, [Split2|Ps]) :-
-    split_piece(N, P, [Split1], [Split2]),
-    append(Before, Split1, Before).
+split_piece_collection(N, [P|Ps], Split1, [Split2|Ps]) :-
+    split_piece(N, P, Split1, [Split2]).
 
 % split_piece(+Index, +Piece, -BeforeList, -AfterList)
 split_piece(N, piece(Type, Start, Len), [piece(Type, Start, N)], [piece(Type, NewStart, AfterLen)]) :-
@@ -98,12 +96,16 @@ extended_piece_table_to_line_array(PT, Lines) :-
     split_lines(String, Lines).
 
 % cursor_xy_to_string_index(+Cursor, +LineSizes, +Acc, +LineIndex, -Index)
-cursor_xy_to_string_index(cursor(X, Y), [], Acc, _, Acc).
+% cursor_xy_to_string_index(cursor(X, Y), [], Acc, _, Acc) :- writeln("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tFUDEU, CHEGOU AQUI.").
+cursor_xy_to_string_index(cursor(X, Y), [H|_], Acc, LineIdx, Index) :- 
+  LineIdx =:= X,
+  Index is Acc + Y + X, 
+  writeln("this is Index:"), writeln(Index).
 cursor_xy_to_string_index(cursor(X, Y), [H|T], Acc, LineIdx, Index) :-
-    ( LineIdx =:= X -> Index is Acc + Y + X
-    ; Acc1 is Acc + H,
-      LineIdx1 is LineIdx + 1,
-      cursor_xy_to_string_index(cursor(X, Y), T, Acc1, LineIdx1, Index)).
+  writeln("\r\r\r\r\r\r\r\r\r\r\r\rthis is LineIdx:"), writeln(LineIdx),
+  Acc1 is Acc + H,
+  LineIdx1 is LineIdx + 1,
+  cursor_xy_to_string_index(cursor(X, Y), T, Acc1, LineIdx1, Index)).
 
 % split_lines(+String, -Lines)
 split_lines(Text, Lines) :-
