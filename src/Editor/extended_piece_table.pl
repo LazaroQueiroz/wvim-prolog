@@ -39,40 +39,31 @@ insert_text(piece_table(Pieces, Orig, Add, Insert, Index, Lines), piece_table(Ne
 
 % delete_text(+StartIndex, +Length, +PieceTable, -NewPieceTable)
 delete_text(Start, Len, piece_table(Pieces, Orig, Add, Insert, Index, Lines), piece_table(NewPieces, Orig, Add, Insert, NewIndex, Lines)) :-
-    writeln("\rDeleting text"), write(Start), write(" "), writeln(Len),
     S1 is max(0, Start - 1),
     split_piece_collection(S1, Pieces, Before, Rest),
-    writeln("S1, Pieces, Before, Rest: "), write(S1), write(" | "), write(Pieces), write(" | Before: "), write(Before), write(" | Rest: "), writeln(Rest), 
     split_piece_collection(Len, Rest, _, After),
-    write("this is the after: "), writeln(After),
     append(Before, After, Combined),
-    write("this is the combined: "), writeln(Combined),
     (Combined = [] -> NewPieces = [piece(original, 0, 0)] ; NewPieces = Combined),
-    write("Those are the new pieces: "), writeln(NewPieces),
-    NewIndex is max(0, Index - Len),
-    write("This is the new Index: "), writeln(NewIndex).
+    NewIndex is max(0, Index - Len).
 
 % split_piece_collection(+Index, +Pieces, -Before, -After)
-split_piece_collection(0, Pieces, [], Pieces) :- writeln("well, look where we got... ashdioufhaiosudhfaouishdf").
+split_piece_collection(0, Pieces, [], Pieces). 
 split_piece_collection(_, [], [], []).
 split_piece_collection(N, [P|Ps], [P|Before], After) :-
     P = piece(_, _, Len),
     N >= Len,
     N1 is N - Len,
     split_piece_collection(N1, Ps, Before, After).
-split_piece_collection(N, [P|Ps], Split1, [Split2|Ps]) :-
-  write("TIME TO SPLIT: =============================> "), write([P|Ps]), write(" | "), write(N),
-    split_piece(N, P, Split1, [Split2]).
+split_piece_collection(N, [P|Ps], Split1, [Split2|Ps]) :- split_piece(N, P, Split1, [Split2]).
 
 % split_piece(+Index, +Piece, -BeforeList, -AfterList)
 split_piece(N, piece(Type, Start, Len), [piece(Type, Start, N)], [piece(Type, NewStart, AfterLen)]) :-
     N > 0,
-    write("got here, problem ==========================< N: "), writeln(N),
     N < Len,
     NewStart is Start + N,
     AfterLen is Len - N.
-split_piece(N, piece(Type, Start, Len), [], [piece(Type, Start, Len)]) :- writeln("WE'RE DEALING HERE RIGHT NOW HEHE"), N =< 0.
-split_piece(N, piece(Type, Start, Len), [piece(Type, Start, Len)], []) :- write("got here, N: "), writeln(N), N >= Len.
+split_piece(N, piece(Type, Start, Len), [], [piece(Type, Start, Len)]) :- N =< 0.
+split_piece(N, piece(Type, Start, Len), [piece(Type, Start, Len)], []) :- N >= Len.
 
 % extended_piece_table_to_string(+PieceTable, -String)
 extended_piece_table_to_string(piece_table(Pieces, Orig, Add, Insert, Index, _), Result) :-
