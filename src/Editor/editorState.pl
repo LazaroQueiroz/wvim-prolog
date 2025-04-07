@@ -69,8 +69,8 @@ editor_state_from_file(Content, Rows, Cols, Filename, EditorState) :-
 % ----- Update Cursor in Editor State -----
 update_editor_cursor(editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search), Direction, UpdatedState) :-
     PT = piece_table(_, _, _, _, _, LineSizes),
-    ( M = insert -> true ; true ),  % mode check placeholder
-    move_cursor(Direction, C, LineSizes, NewCursor),
+    ( M = insert -> Cond = 0 ; Cond = 1 ),
+    move_cursor(Direction, C, LineSizes, Cond, NewCursor),
     UpdatedState = editor_state(M, PT, NewCursor, V, FS, FN, SB, CB, U, R, VS, Copy, Search).
 
 % ----- Update Viewport in Editor State -----
