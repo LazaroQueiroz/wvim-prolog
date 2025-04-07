@@ -35,19 +35,20 @@ move_cursor("\r", Cursor, LineSizes, NewCursor) :-
   NX is X + 1,
   NewCursor = cursor(NX, 0).
 
-move_cursor("\u007F", Cursor, LineSizes, NewCursor) :-
-  cursor(X, Y) = Cursor,
+move_cursor("\u007F", cursor(0, 0), LineSizes, cursor(0, 0)).
+
+move_cursor("\u007F", cursor(X, 0), LineSizes, NewCursor) :-
+  X =\= 0,
+  NX is max(0, X - 1),
+  nth0(NX, LineSizes, PreviousLine),
+  NY is PreviousLine,
+  NewCursor = cursor(NX, NY).
+
+move_cursor("\u007F", cursor(X,Y), LineSizes, NewCursor) :-
   Y =\= 0,
   NY is Y - 1,
   NewCursor = cursor(X, NY).
 
-move_cursor("\u007F", Cursor, LineSizes, NewCursor) :-
-  cursor(X, Y) = Cursor,
-  Y =:= 0,
-  NX is max(0, X - 1),
-  PreviousLine = nth0(NX, LineSizes),
-  NY is PreviousLine - 1,
-  NewCursor = cursor(NX, NY).
 
 move_cursor(_, Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,

@@ -17,6 +17,7 @@ render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename) :-
   write(Mode), write(" | "),
   write(Cursor), write(" | "),
   piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertIndex, LineSizes) = PieceTable,
+  write(Pieces), write(" | "),
   write(LineSizes), write(" | "), 
   write(InsertIndex), write(" | "),
   write(InsertBuffer), write(" | "),

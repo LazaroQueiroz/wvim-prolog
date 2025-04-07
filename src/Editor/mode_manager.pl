@@ -122,16 +122,19 @@ handle_delete(State, NewState) :-
     update_editor_cursor(AuxiliaryState, "\u007F", NewState), !. 
 
 handle_delete(State, NewState) :-
+  State = editor_state(_, _, cursor(0, 0), _, _, _, _, _, _, _, _, _, _),
+  NewState = State.
+
+handle_delete(State, NewState) :-
     State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, _, FN, SB, CB, U, R, VS, Copy, Search),
     delete_text(Index, 1, piece_table(Pieces, Orig, Add, "", Index, LineSizes), TempState),
-    TempState = [NewPieces, NewOrig, NewAdd, NewInsert, NewIndex, _],
+    TempState = piece_table(NewPieces, NewOrig, NewAdd, NewInsert, NewIndex, _),
+    update_editor_cursor(State, "\u007F", AuxiliaryState), 
+    AuxiliaryState = editor_state(_, _, NewCursor, _, _, _, _, _, _, _, _, _, _),
     update_lines_sizes("\u007F", Cursor, LineSizes, NewLineSizes),
-    Cursor = cursor(X, _),
     NewPT = piece_table(NewPieces, NewOrig, NewAdd, NewInsert, NewIndex, NewLineSizes),
-    AuxiliaryState = editor_state(M, NewPT, Cursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search),
-    update_editor_cursor(AuxiliaryState, "\u007F", NewState). 
+    NewState = editor_state(M, NewPT, NewCursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search).
 
-handle_delete(State, NewState) :- NewState = State.  % Placeholder
 
 % Handle replace
 handle_replace(State, Input, NewState) :- handle_insert(State, Input, NewState).
