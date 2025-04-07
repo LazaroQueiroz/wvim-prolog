@@ -35,13 +35,30 @@ get_terminal_size(Rows, Cols) :-
 event_loop(States, Index) :-
     nth0(Index, States, CurrentState),
     render(CurrentState),
-    get_single_char(Code),
-    char_code(Char, Code), 
-    atom_string(Char, Input), 
+    read_key(Code),
+    string_codes(Input, Code), 
     handle_mode(CurrentState, Input, NewState),
     replace_at(Index, NewState, States, NewStates),
     !,
     event_loop(NewStates, NewIndex).
+
+read_key(Input) :-
+    get_single_char(C1),
+    ( C1 = 27 ->
+        catch(
+            (
+                alarm(0.05, throw(timeout), Id),
+                get_single_char(C2),
+                get_single_char(C3),
+                remove_alarm(Id),
+                Input = [C1, C2, C3]
+            ),
+            timeout,
+            Input = [C1]
+        )
+    ;
+        Input = [C1]
+    ).
 
 event_loop(_, Index) :-
     Index =:= -1, 

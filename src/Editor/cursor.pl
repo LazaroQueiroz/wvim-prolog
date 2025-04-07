@@ -15,7 +15,17 @@ move_cursor("h", Cursor, LineSizes, NewCursor) :-
   NY is max(0, Y - 1),
   NewCursor = cursor(X, NY).
 
+move_cursor("\e[D", Cursor, LineSizes, NewCursor) :-
+  cursor(X, Y) = Cursor,
+  NY is max(0, Y - 1),
+  NewCursor = cursor(X, NY).
+
 move_cursor("j", Cursor, LineSizes, NewCursor) :-
+  cursor(X, Y) = Cursor,
+  NX is X + 1,
+  NewCursor = cursor(NX, Y).
+
+move_cursor("\e[B", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
   NX is X + 1,
   NewCursor = cursor(NX, Y).
@@ -25,7 +35,17 @@ move_cursor("k", Cursor, LineSizes, NewCursor) :-
   NX is max(0, X - 1),
   NewCursor = cursor(NX, Y).
 
+move_cursor("\e[A", Cursor, LineSizes, NewCursor) :-
+  cursor(X, Y) = Cursor,
+  NX is max(0, X - 1),
+  NewCursor = cursor(NX, Y).
+
 move_cursor("l", Cursor, LineSizes, NewCursor) :-
+  cursor(X, Y) = Cursor,
+  NY is Y + 1,
+  NewCursor = cursor(X, NY).
+
+move_cursor("\e[C", Cursor, LineSizes, NewCursor) :-
   cursor(X, Y) = Cursor,
   NY is Y + 1,
   NewCursor = cursor(X, NY).
