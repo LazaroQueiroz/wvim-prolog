@@ -61,8 +61,8 @@ handle_visual_mode(State, Input, NewState) :- update_editor_cursor(State, Input,
 handle_insert_mode(State, "\e", NewState) :- 
   writeln("changin to NORMAL MODE"),
   State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
+  writeln("changin to NORMAL MODE before insert"),
   insert_text(PT, NewPT),
-  writeln("changin to NORMAL MODE after insert"),
   AuxiliaryState = editor_state(M, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   switch_mode(AuxiliaryState, normal, false, NewState).
 handle_insert_mode(State, "\b", NewState) :- handle_delete(State, NewState), !.
