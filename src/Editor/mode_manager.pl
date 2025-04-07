@@ -34,8 +34,6 @@ handle_normal_mode(State, "i", NewState) :-
   State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
   PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
   cursor(X, Y) = Cursor,
-  writeln(State),
-  writeln(Cursor),
   cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, NewInsertStartIndex), 
   NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
   AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
@@ -65,18 +63,18 @@ handle_insert_mode(State, "\e", NewState) :-
   insert_text(PT, NewPT),
   AuxiliaryState = editor_state(M, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   switch_mode(AuxiliaryState, normal, false, NewState).
-handle_insert_mode(State, "\b", NewState) :- handle_delete(State, NewState), !.
+handle_insert_mode(State, "\u007F", NewState) :- handle_delete(State, NewState), !.
 handle_insert_mode(State, Input, NewState) :- 
   handle_insert(State, Input, NewState).
 
 % Replace Mode Handler
 handle_replace_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
-handle_replace_mode(State, "\b", NewState) :- handle_delete(State, NewState).
+handle_replace_mode(State, "\u007F", NewState) :- handle_delete(State, NewState).
 handle_replace_mode(State, Input, NewState) :- handle_replace(State, Input, NewState).
 
 % Substitution Mode Handler
 handle_substitution_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
-handle_substitution_mode(State, "\b", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
+handle_substitution_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     string_length(Search, Len), Len > 0,
     sub_string(Search, 0, Len-1, _, NewSearch),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch).
@@ -87,7 +85,7 @@ handle_substitution_mode(State, Input, NewState) :-
 
 % Command Mode Handler
 handle_command_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
-handle_command_mode(State, "\b", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
+handle_command_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     string_length(CB, Len), Len > 0,
     sub_string(CB, 0, Len-1, _, NewCB),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
@@ -107,11 +105,32 @@ handle_insert(State, Input, NewState) :-
     update_editor_cursor(AuxiliaryState, Direction, NewState).
 
 get_direction("\r", "\r").
-get_direction("\b", "\b").
+get_direction("\u007F", "\u007F").
 get_direction(Input, "l").
 
-
 % Handle delete
+handle_delete(State, NewState) :-
+    State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, _, FN, SB, CB, U, R, VS, Copy, Search),
+    string_length(InsertBuf, Len),
+    Len > 0,
+    NewLen is Len - 1,
+    sub_string(InsertBuf, 0, NewLen, 1, NewInsertBuf),
+    update_lines_sizes("\u007F", Cursor, LineSizes, NewLineSizes),
+    Cursor = cursor(X, _),
+    NewPT = piece_table(Pieces, Orig, Add, NewInsertBuf, Index, NewLineSizes),
+    AuxiliaryState = editor_state(M, NewPT, Cursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search),
+    update_editor_cursor(AuxiliaryState, "\u007F", NewState), !. 
+
+handle_delete(State, NewState) :-
+    State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, _, FN, SB, CB, U, R, VS, Copy, Search),
+    delete_text(Index, 1, piece_table(Pieces, Orig, Add, "", Index, LineSizes), TempState),
+    TempState = [NewPieces, NewOrig, NewAdd, NewInsert, NewIndex, _],
+    update_lines_sizes("\u007F", Cursor, LineSizes, NewLineSizes),
+    Cursor = cursor(X, _),
+    NewPT = piece_table(NewPieces, NewOrig, NewAdd, NewInsert, NewIndex, NewLineSizes),
+    AuxiliaryState = editor_state(M, NewPT, Cursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search),
+    update_editor_cursor(AuxiliaryState, "\u007F", NewState). 
+
 handle_delete(State, NewState) :- NewState = State.  % Placeholder
 
 % Handle replace

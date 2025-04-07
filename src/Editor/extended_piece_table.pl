@@ -9,8 +9,7 @@
     cursor_xy_to_string_index/5,
     split_lines/2,
     get_lines_sizes/4,
-    update_lines_sizes/4,
-    teste_print/1
+    update_lines_sizes/4
 ]).
 
 % ===============================
@@ -71,8 +70,6 @@ split_piece(N, piece(Type, Start, Len), [piece(Type, Start, Len)], []) :- N >= L
 extended_piece_table_to_string(piece_table(Pieces, Orig, Add, Insert, Index, _), Result) :-
     extended_table_fold(Pieces, Orig, Add, Insert, Index, "", Result).
 
-teste_print(String) :- writeln(String).
-
 extended_table_fold([], _, _, _, _, Acc, Acc).
 extended_table_fold([piece(Type, Start, Len)|Rest], Orig, Add, Insert, Index, Acc, Result) :-
     ( Type = original -> sub_string(Orig, Start, Len, _, S)
@@ -96,16 +93,14 @@ extended_piece_table_to_line_array(PT, Lines) :-
     split_lines(String, Lines).
 
 % cursor_xy_to_string_index(+Cursor, +LineSizes, +Acc, +LineIndex, -Index)
-% cursor_xy_to_string_index(cursor(X, Y), [], Acc, _, Acc) :- writeln("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tFUDEU, CHEGOU AQUI.").
+cursor_xy_to_string_index(cursor(X, Y), [], Acc, _, Acc).
 cursor_xy_to_string_index(cursor(X, Y), [H|_], Acc, LineIdx, Index) :- 
   LineIdx =:= X,
-  Index is Acc + Y + X, 
-  writeln("this is Index:"), writeln(Index).
+  Index is Acc + Y + X.
 cursor_xy_to_string_index(cursor(X, Y), [H|T], Acc, LineIdx, Index) :-
-  writeln("\r\r\r\r\r\r\r\r\r\r\r\rthis is LineIdx:"), writeln(LineIdx),
   Acc1 is Acc + H,
   LineIdx1 is LineIdx + 1,
-  cursor_xy_to_string_index(cursor(X, Y), T, Acc1, LineIdx1, Index)).
+  cursor_xy_to_string_index(cursor(X, Y), T, Acc1, LineIdx1, Index).
 
 % split_lines(+String, -Lines)
 split_lines(Text, Lines) :-
@@ -122,12 +117,12 @@ update_lines_sizes("\r", cursor(X, Y), LineSizes, New) :-
     Y1 is Y,
     Y2 is Cur - Y,
     append(Before, [Y1, Y2|After], New).
-update_lines_sizes("\b", cursor(X, 0), LineSizes, New) :-
+update_lines_sizes("\u007F", cursor(X, 0), LineSizes, New) :-
     split_at(X, LineSizes, Before0, [Cur|After]),
     (Before0 = [] -> Before = [], Last = 0 ; append(Before, [Last], Before0)),
     NewSize is Cur + Last,
     append(Before, [NewSize|After], New).
-update_lines_sizes("\b", cursor(X, Y), LineSizes, New) :-
+update_lines_sizes("\u007F", cursor(X, Y), LineSizes, New) :-
     split_at(X, LineSizes, Before, [Cur|After]),
     NewSize is Cur - 1,
     append(Before, [NewSize|After], New).

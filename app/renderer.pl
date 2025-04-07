@@ -4,7 +4,7 @@
 
 % ----- Placeholder Renderer -----
 render(State) :-
-    % tty_clear,
+    tty_clear,
     State = editor_state(Mode, PieceTable, Cursor, Viewport, _, Filename, StatusBar, _, _, _, _, _, _),
     render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename),
     render_viewport(PieceTable, Viewport),
@@ -19,6 +19,7 @@ render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename) :-
   piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertIndex, LineSizes) = PieceTable,
   write(LineSizes), write(" | "), 
   write(InsertIndex), write(" | "),
+  write(InsertBuffer), write(" | "),
   write(Rows), write(" | "), write(Columns).
 
 render_cursor(Cursor) :-
