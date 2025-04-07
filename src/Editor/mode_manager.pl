@@ -69,7 +69,8 @@ handle_insert_mode(State, "\e", NewState) :-
   State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   insert_text(PT, NewPT),
   AuxiliaryState = editor_state(M, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
-  switch_mode(AuxiliaryState, normal, false, NewState).
+  switch_mode(AuxiliaryState, normal, false, TempState),
+  update_editor_cursor(TempState, "h", NewState).
 handle_insert_mode(State, "\u007F", NewState) :- handle_delete(State, NewState), !.
 handle_insert_mode(State, Input, NewState) :- 
   member(Input, ["\e[A", "\e[B", "\e[C", "\e[D"]),
