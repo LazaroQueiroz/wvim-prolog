@@ -14,6 +14,7 @@
 
 :- use_module('editorState.pl').
 :- use_module('extended_piece_table.pl').
+:- use_module('filemanager.pl').
 
 % ----- Entry Point -----
 handle_mode(State, Input, NewState) :-
