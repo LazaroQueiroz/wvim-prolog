@@ -23,9 +23,10 @@ buffer_type(add).
 % piece(BufferType, StartIndex, Length)
 
 % create_extended_piece_table(+OriginalText, -PieceTable)
-create_extended_piece_table(Text, piece_table([piece(original, 0, Len)], Text, "", "", 0, LineSizes)) :-
-    string_length(Text, Len),
-    get_lines_sizes(Text, 0, [], LineSizes).
+create_extended_piece_table(Content, piece_table([piece(original, 0, Len)], Text, "", "", 0, LineSizes)) :-
+  atom_String(Content, Text),
+  string_length(Text, Len),
+  get_lines_sizes(Text, 0, [], LineSizes), writeln("Tá dando erro?")).
 
 % insert_text(+PieceTable, -NewPieceTable)
 insert_text(piece_table(Pieces, Orig, Add, "", Index, Lines), piece_table(Pieces, Orig, Add, "", Index, Lines)).

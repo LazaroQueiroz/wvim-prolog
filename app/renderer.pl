@@ -1,15 +1,14 @@
-:- module(renderer, [render/2]).
+:- module(renderer, [render/1]).
 :- use_module('../src/Editor/extended_piece_table.pl').
 :- use_module('../src/Editor/cursor.pl').
 
 % ----- Placeholder Renderer -----
-render(State, DebugMode) :-
-  (DebugMode =:= 0 -> tty_clear; write("")),
-    State = editor_state(Mode, PieceTable, Cursor, Viewport, _, Filename, StatusBar, _, _, _, _, _, _),
-    render_viewport(PieceTable, Viewport),
-    render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename),
-    render_cursor(Cursor, Viewport),
-    flush_output.
+render(State) :-
+  State = editor_state(Mode, PieceTable, Cursor, Viewport, _, Filename, StatusBar, _, _, _, _, _, _),
+  render_viewport(PieceTable, Viewport),
+  render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename),
+  render_cursor(Cursor, Viewport),
+  flush_output.
 
 render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename) :-
   viewport(Rows, Columns, _, _) = Viewport,

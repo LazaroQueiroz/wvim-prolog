@@ -113,17 +113,6 @@ handle_substitution_mode(State, Input, NewState) :-
     string_concat(Search, Input, NewSearch),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch).
 
-% Command Mode Handler
-handle_command_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
-handle_command_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
-    string_length(CB, Len), Len > 0,
-    sub_string(CB, 0, Len-1, _, NewCB),
-    NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
-handle_command_mode(State, Input, NewState) :-
-    State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
-    string_concat(CB, Input, NewCB),
-    NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
-
 % Handle insert
 handle_insert(State, Input, NewState) :-
     State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
@@ -172,5 +161,34 @@ handle_replace(State, Input, NewState) :- handle_insert(State, Input, NewState).
 % Switch mode
 switch_mode(State, NewMode, _, NewState) :-
     State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
-    NewState = editor_state(NewMode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search).
+    NewState = editor_state(NewMode, PT, Cursor, View, FS, FN, SB, "", U, R, VS, Copy, Search).
+
+% Command Mode Handler
+handle_command_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
+handle_command_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    string_length(CB, Len), Len > 0,
+    sub_string(CB, 0, Len-1, _, NewCB),
+    NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
+handle_command_mode(State, "\n", NewState) :- 
+    State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    handle_command(State, CB, NewState).
+handle_command_mode(State, Input, NewState) :-
+    State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    string_concat(CB, Input, NewCB),
+    NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
+
+  % Handle Command
+handle_command(State, Input, NewState) :-
+    atomic_list_concat(Parts, ' ', Input),
+    Parts = [Command | RawArgsList],
+    atomic_list_concat(RawArgsList, ' ', RawArgs),
+    normalize_space(RawArgs, Args),
+    ( Command =:= "w"  -> save_file(State, false, Args, NewState)
+    ; Command =:= "w!" -> save_file(State, True, Args, NewState)
+    ; Command =:= "q"  -> quit_editor(State, NewState)
+    ; Command =:= "q!" -> NewState = editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)
+    ; Command =:= "wq" -> save_and_quit(State, false, Args, NewState)
+    ; Command =:= "wq!" -> save_and_quit(State, true, Args, NewState)
+    ; set_error(State, "Command not found.", NewState)
+).
 

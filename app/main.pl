@@ -2,7 +2,7 @@
 % PROLOG: Editor State + Main Event Loop
 % ======================
 
-:- module(editor_main, [start_editor/1]).
+:- module(editor_main, [start_editor/0]).
 
 :- use_module(library(readutil)).
 :- use_module(library(tty)).
@@ -17,11 +17,29 @@
 % Assuming editor_state/13 and helpers already defined above
 
 % ----- Start Editor -----
-start_editor(DebugMode):-
-    tty_clear,
-    tty_size(Rows, Cols),
-    default_editor_state(Rows, Cols, "", EditorState),
-    event_loop([EditorState], 0, DebugMode).
+start_editor :-
+  tty_clear,
+  tty_size(Rows, Cols),
+  current_prolog_flag(argv, Args),
+  editor_state_initialization(Args, Rows, Cols, EditorState),
+  event_loop([EditorState], 0, Args).
+
+% ---- Initialization Editor State ----
+editor_state_initialization([], Rows, Cols, EditorState) :-
+  default_editor_state(Rows, Cols, "", EditorState).
+
+editor_state_initialization([Filename | _], Rows, Cols, EditorState)  :-
+  atom_string(Filename, FilenameString),
+  writeln(['Recebido:', FilenameString]),
+  ( exists_file(FilenameString) ->
+    writeln("Arquivo encontrado!"),
+    read_file_to_string(FilenameString, Content, []),
+    writeln(["Content:", Content]),
+    editor_state_from_file(Content, Rows, Cols, FilenameString, EditorState)
+  ;
+    writeln("Arquivo não encontrado!"),
+    default_editor_state(Rows, Cols, FilenameString, EditorState)
+  ).
 
 % ----- Get Terminal Size -----
 get_terminal_size(Rows, Cols) :-
@@ -33,18 +51,18 @@ get_terminal_size(Rows, Cols) :-
     atom_number(C, Cols).
 
 % ----- Event Loop -----
-event_loop(States, Index, DebugMode) :-
+event_loop(States, Index, Args) :-
     nth0(Index, States, CurrentState),
-    render(CurrentState, DebugMode),
+    render(CurrentState),
     read_key(Code),
-    string_codes(Input, Code), 
+    string_codes(Input, Code),
     handle_mode(CurrentState, Input, UpdatedState),
     UpdatedState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     update_viewport(View, Cursor, UpdatedViewport),
     UpdatedViewportState = editor_state(Mode, PT, Cursor, UpdatedViewport, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     replace_at(Index, UpdatedViewportState, States, NewStates),
     !,
-    event_loop(NewStates, 0, DebugMode).
+    event_loop(NewStates, 0, Args).
 
 read_key(Input) :-
     get_single_char(C1),
@@ -105,4 +123,4 @@ replace_at(I, New, [X|Xs], [X|Rest]) :-
 is_running(editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)) :- !, fail.
 is_running(_) :- true.
 
-
+:- initialization(start_editor, main).
