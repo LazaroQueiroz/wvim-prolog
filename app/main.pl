@@ -2,7 +2,7 @@
 % PROLOG: Editor State + Main Event Loop
 % ======================
 
-:- module(editor_main, [start_editor/0]).
+:- module(editor_main, [start_editor/1]).
 
 :- use_module(library(readutil)).
 :- use_module(library(tty)).
@@ -10,17 +10,18 @@
 :- use_module(library(apply)).
 :- use_module('../src/Editor/editorState.pl').
 :- use_module('../src/Editor/mode_manager.pl').
+:- use_module('../src/Editor/viewport.pl').
 :- use_module('renderer.pl').
 
 % (Previous editor state predicates go here...)
 % Assuming editor_state/13 and helpers already defined above
 
 % ----- Start Editor -----
-start_editor :-
+start_editor(DebugMode):-
     tty_clear,
     tty_size(Rows, Cols),
     default_editor_state(Rows, Cols, "", EditorState),
-    event_loop([EditorState], 0).
+    event_loop([EditorState], 0, DebugMode).
 
 % ----- Get Terminal Size -----
 get_terminal_size(Rows, Cols) :-
@@ -32,15 +33,19 @@ get_terminal_size(Rows, Cols) :-
     atom_number(C, Cols).
 
 % ----- Event Loop -----
-event_loop(States, Index) :-
+event_loop(States, Index, DebugMode) :-
     nth0(Index, States, CurrentState),
-    render(CurrentState),
+    CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    update_viewport(View, Cursor, UpdatedViewport),
+    UpdatedViewportState = editor_state(Mode, PT, Cursor, UpdatedViewport, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    write("\t\t\t\t\t\n\n UpdatedViewport: "), writeln(UpdatedViewport),
+    render(UpdatedViewportState, DebugMode),
     read_key(Code),
     string_codes(Input, Code), 
-    handle_mode(CurrentState, Input, NewState),
+    handle_mode(UpdatedViewportState, Input, NewState),
     replace_at(Index, NewState, States, NewStates),
     !,
-    event_loop(NewStates, NewIndex).
+    event_loop(NewStates, NewIndex, DebugMode).
 
 read_key(Input) :-
     get_single_char(C1),

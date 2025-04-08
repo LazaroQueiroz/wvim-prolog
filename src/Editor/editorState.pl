@@ -11,6 +11,7 @@
 
 :- use_module('extended_piece_table.pl').
 :- use_module('cursor.pl').
+:- use_module('viewport.pl').
 
 % ======================
 % PROLOG: Editor State
@@ -45,8 +46,7 @@ default_editor_state(Rows, Cols, Filename, EditorState) :-
     % create_extended_piece_table("", PieceTable),
     PieceTable = piece_table([piece(original, 0, 0)], "", "", "", 0, [0]),
     Cursor = cursor(0, 0),
-    % default_viewport(Rows, Cols, Viewport),
-    Viewport = [Rows, Cols, 0, 0],
+    default_viewport(Rows, Cols, Viewport),
     FileStatus = saved,
     StatusBar = status_bar(no_exception, ""),
     EditorState = editor_state(

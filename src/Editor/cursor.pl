@@ -26,6 +26,13 @@ move_cursor("\e[D", Cursor, LineSizes, IsInsertMode, NewCursor) :-
   NY is max(0, Y - 1),
   NewCursor = cursor(X, NY).
 
+  % | input == 'j' -- Move down
+  %   =
+  %     let newX = min (length lineSizes - 1) (x' + 1)
+  %         maxRight = maxY newX
+  %         newY = max 0 (min (maxRight + extra) y')
+  %      in Cursor newX newY
+
 % Down
 move_cursor("j", Cursor, LineSizes, IsInsertMode, NewCursor) :-
   cursor(X, Y) = Cursor,
