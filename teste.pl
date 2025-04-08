@@ -22,3 +22,14 @@ key_loop :-
     format("Pressed: ~s", [Key]),
     ( Key = esc -> true ; key_loop ).
 
+handle_insert_mode(State, Input, NewState) :- 
+  member(Input, ["\e[A", "\e[B", "\e[C", "\e[D"]),
+  writeln("IS A MEMBER AIFASOHDFOIAUSHDFIOUASHDIOFUHASODIUFHIOSUDHFIOHUS"),
+  State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
+  insert_text(PT, NewPT),
+  NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
+  update_editor_cursor(State, Input, AuxiliaryState),
+  AuxiliaryState = editor_state(M, NewPT, NewC, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
+  cursor_xy_to_string_index(NewC, LineSizes, 0, 0, NewInsertStartIndex),
+  FinalPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
+  NewState = editor_state(M, FinalPT, NewC, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch).
