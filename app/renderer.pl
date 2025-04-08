@@ -55,7 +55,8 @@ render_viewport(PieceTable, viewport(TotalRows, TotalColumns, InitialRow, Initia
         TotalColumnsForTheLine is min(TotalColumns - 2, LineLength),
         sub_string(Line, InitialColumnMinusOne, TotalColumnsForTheLine, _, VisibleLine),
         writeln(VisibleLine)
-    )).
+    )),
+    write("\n\n\n\n\n\nFinish the loop (render viewport)").
 
 % Helper predicate to slice a list from Start to End (exclusive)
 slice_lines(Lines, Start, End, Slice) :-
