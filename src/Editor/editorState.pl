@@ -57,7 +57,6 @@ default_editor_state(Rows, Cols, Filename, EditorState) :-
 % ----- Editor State from File -----
 editor_state_from_file(Content, Rows, Cols, Filename, EditorState) :-
     create_extended_piece_table(Content, PieceTable),
-    writeln("AEEE POOORRRAAA"),
     Cursor = cursor(0, 0),
     default_viewport(Rows, Cols, Viewport),
     FileStatus = saved,

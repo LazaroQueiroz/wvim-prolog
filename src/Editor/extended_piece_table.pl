@@ -24,9 +24,10 @@ buffer_type(add).
 
 % create_extended_piece_table(+OriginalText, -PieceTable)
 create_extended_piece_table(Content, piece_table([piece(original, 0, Len)], Text, "", "", 0, LineSizes)) :-
-  atom_String(Content, Text),
+  atom_string(Content, Text),
   string_length(Text, Len),
-  get_lines_sizes(Text, 0, [], LineSizes), writeln("Tá dando erro?")).
+  string_chars(Text, Chars),
+  get_lines_sizes(Chars, 0, [], LineSizes).
 
 % insert_text(+PieceTable, -NewPieceTable)
 insert_text(piece_table(Pieces, Orig, Add, "", Index, Lines), piece_table(Pieces, Orig, Add, "", Index, Lines)).
@@ -109,7 +110,9 @@ split_lines(Text, Lines) :-
 % get_lines_sizes(+String, +CurrentLen, +Acc, -Sizes)
 get_lines_sizes([], Len, Acc, Sizes) :- reverse([Len|Acc], Sizes).
 get_lines_sizes(['\n'|T], Len, Acc, Sizes) :- get_lines_sizes(T, 0, [Len|Acc], Sizes).
-get_lines_sizes([_|T], Len, Acc, Sizes) :- Len1 is Len + 1, get_lines_sizes(T, Len1, Acc, Sizes).
+get_lines_sizes([_|T], Len, Acc, Sizes) :- 
+  Len1 is Len + 1, 
+  get_lines_sizes(T, Len1, Acc, Sizes).
 
 % update_lines_sizes(+Input, +Cursor, +LineSizes, -NewSizes)
 update_lines_sizes("\r", cursor(X, Y), LineSizes, New) :-

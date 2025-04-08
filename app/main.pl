@@ -30,14 +30,10 @@ editor_state_initialization([], Rows, Cols, EditorState) :-
 
 editor_state_initialization([Filename | _], Rows, Cols, EditorState)  :-
   atom_string(Filename, FilenameString),
-  writeln(['Recebido:', FilenameString]),
   ( exists_file(FilenameString) ->
-    writeln("Arquivo encontrado!"),
     read_file_to_string(FilenameString, Content, []),
-    writeln(["Content:", Content]),
     editor_state_from_file(Content, Rows, Cols, FilenameString, EditorState)
   ;
-    writeln("Arquivo não encontrado!"),
     default_editor_state(Rows, Cols, FilenameString, EditorState)
   ).
 

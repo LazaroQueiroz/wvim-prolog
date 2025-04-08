@@ -4,20 +4,23 @@
 
 % ----- Placeholder Renderer -----
 render(State) :-
-  State = editor_state(Mode, PieceTable, Cursor, Viewport, _, Filename, StatusBar, _, _, _, _, _, _),
+  tty_clear,
+  State = editor_state(Mode, PieceTable, Cursor, Viewport, _, Filename, StatusBar, CommandBuffer, _, _, _, _, _),
   render_viewport(PieceTable, Viewport),
-  render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename),
+  render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename, CommandBuffer),
   render_cursor(Cursor, Viewport),
   flush_output.
 
-render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename) :-
+render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename, CommandBuffer) :-
   viewport(Rows, Columns, _, _) = Viewport,
   move_cursor_to(1, Rows),
   write(Mode), write(" | "),
   write(Cursor), write(" | "),
   piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertIndex, LineSizes) = PieceTable,
+  write(Filename), write(" | "),
+  write(CommandBuffer), write(" | "),
   % write(Pieces), write(" | "),
-  write(LineSizes), write(" | "), 
+  % write(LineSizes), write(" | "), 
   write(InsertIndex), write(" | "),
   write(Viewport), write(" | "),
   % write(InsertBuffer), write(" | "),
@@ -64,7 +67,7 @@ drop_chars(N, [_|T], Rest) :-
 render_viewport(PieceTable, viewport(TotalRows, TotalColumns, InitialRow, InitialColumn)) :-
     move_cursor_to(1, 1),
     extended_piece_table_to_string(PieceTable, Str),
-    split_string(Str, "\r", "", AllLines),
+    split_string(Str, "\r\n", "", AllLines),
     length(AllLines, NumLines),
     StartRowIndex is InitialRow,
     EndRowIndex is min(StartRowIndex + (TotalRows - 1), NumLines),

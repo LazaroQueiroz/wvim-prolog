@@ -169,7 +169,7 @@ handle_command_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C,
     string_length(CB, Len), Len > 0,
     sub_string(CB, 0, Len-1, _, NewCB),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
-handle_command_mode(State, "\n", NewState) :- 
+handle_command_mode(State, "\r", NewState) :- 
     State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     handle_command(State, CB, NewState).
 handle_command_mode(State, Input, NewState) :-
