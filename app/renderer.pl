@@ -13,7 +13,6 @@ render(State, DebugMode) :-
 
 render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename) :-
   viewport(Rows, Columns, _, _) = Viewport,
-  % write("\t\t\t\t\t\t\t\t\t this are the row: "), writeln(Rows),
   move_cursor_to(1, Rows),
   write(Mode), write(" | "),
   write(Cursor), write(" | "),
@@ -37,6 +36,31 @@ render_cursor(Cursor, viewport(Rows, Columns, InitialRow, InitialColumn)) :-
 %     extended_piece_table_to_string(PieceTable, Str),
 %     split_string(Str, "\r", "", Lines),
 %     forall(member(Line, Lines), writeln(Line)).
+%
+take_string(N, String, Result) :-
+    string_chars(String, Chars),
+    take_chars(N, Chars, Taken),
+    string_chars(Result, Taken).
+
+take_chars(0, _, []) :- !.
+take_chars(_, [], []) :- !.
+take_chars(N, [H|T], [H|Rest]) :-
+    N > 0,
+    N1 is N - 1,
+    take_chars(N1, T, Rest).
+
+drop_string(N, String, Result) :-
+    string_chars(String, Chars),
+    drop_chars(N, Chars, Dropped),
+    string_chars(Result, Dropped).
+
+drop_chars(0, L, L) :- !.
+drop_chars(_, [], []) :- !.
+drop_chars(N, [_|T], Rest) :-
+    N > 0,
+    N1 is N - 1,
+    drop_chars(N1, T, Rest).
+
      
 render_viewport(PieceTable, viewport(TotalRows, TotalColumns, InitialRow, InitialColumn)) :-
     move_cursor_to(1, 1),
@@ -48,15 +72,14 @@ render_viewport(PieceTable, viewport(TotalRows, TotalColumns, InitialRow, Initia
     % Get only the lines from InitialRow to the viewport's height
     slice_lines(AllLines, StartRowIndex, EndRowIndex, ViewportLines),
     % For each line, print from InitialColumn up to TotalColumns
-    InitialColumnMinusOne is max(0, InitialColumn),
+    InitialColumnMinusOne is InitialColumn,
     move_cursor_to(1, 1),
+    AvailableColumns is TotalColumns - 2,
     forall(member(Line, ViewportLines), (
-        string_length(Line, LineLength),
-        TotalColumnsForTheLine is min(TotalColumns - 2, LineLength),
-        sub_string(Line, InitialColumnMinusOne, TotalColumnsForTheLine, _, VisibleLine),
+        drop_string(InitialColumn, Line, AuxiliaryVisibleLine),
+        take_string(AvailableColumns, AuxiliaryVisibleLine, VisibleLine),
         writeln(VisibleLine)
-    )),
-    write("\n\n\n\n\n\nFinish the loop (render viewport)").
+    )).
 
 % Helper predicate to slice a list from Start to End (exclusive)
 slice_lines(Lines, Start, End, Slice) :-

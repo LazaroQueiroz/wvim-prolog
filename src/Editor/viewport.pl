@@ -25,12 +25,9 @@ update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, Y), Updated
   Y < InitCol, Diff is InitCol - Y, 
   scroll_left(viewport(Rows, Columns, InitRow, InitCol), Diff, Updated).
 update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, Y), Updated) :- 
-  Y - InitCol > Columns - 3, 
-  write("\t\t\t\t\t\n\n\nmoving viewport right here."),
-  Diff is Y - InitCol - Columns + 3, 
-  write("\t\t\t\t\t\n\n\n This is the Diff: "), write(Diff),
-  scroll_right(viewport(Rows, Columns, InitRow, InitCol), Diff, Updated),
-  write("\t\t\t\t\t\n\n\n This is the Updated "), write(Updated).
+  Y - InitCol > Columns - 2, 
+  Diff is Y - InitCol - Columns + 2, 
+  scroll_right(viewport(Rows, Columns, InitRow, InitCol), Diff, Updated).
 update_viewport(Viewport, _, Viewport).
 
 % Resize viewport

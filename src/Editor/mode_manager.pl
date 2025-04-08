@@ -149,7 +149,7 @@ handle_delete(State, NewState) :-
     Cursor = cursor(X, _),
     NewPT = piece_table(Pieces, Orig, Add, NewInsertBuf, Index, NewLineSizes),
     AuxiliaryState = editor_state(M, NewPT, Cursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search),
-    update_editor_cursor(AuxiliaryState, "\u007F", NewState), !. 
+    update_editor_cursor(AuxiliaryState, "\u007F", NewState). 
 
 handle_delete(State, NewState) :-
   State = editor_state(_, _, cursor(0, 0), _, _, _, _, _, _, _, _, _, _),

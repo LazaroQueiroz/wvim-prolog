@@ -35,18 +35,16 @@ get_terminal_size(Rows, Cols) :-
 % ----- Event Loop -----
 event_loop(States, Index, DebugMode) :-
     nth0(Index, States, CurrentState),
-    CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
-    update_viewport(View, Cursor, UpdatedViewport),
-    UpdatedViewportState = editor_state(Mode, PT, Cursor, UpdatedViewport, FS, FN, SB, CB, U, R, VS, CopyText, Search),
-    write("\t\t\t\t\t\n\nUpdatedViewport (from event loop): "), writeln(UpdatedViewport),
-    write("\t\t\t\t\t\n\nUpdatedViewportState (from event loop): "), writeln(UpdatedViewportState),
-    render(UpdatedViewportState, DebugMode),
+    render(CurrentState, DebugMode),
     read_key(Code),
     string_codes(Input, Code), 
-    handle_mode(UpdatedViewportState, Input, NewState),
-    replace_at(Index, NewState, States, NewStates),
+    handle_mode(CurrentState, Input, UpdatedState),
+    UpdatedState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    update_viewport(View, Cursor, UpdatedViewport),
+    UpdatedViewportState = editor_state(Mode, PT, Cursor, UpdatedViewport, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    replace_at(Index, UpdatedViewportState, States, NewStates),
     !,
-    event_loop(NewStates, NewIndex, DebugMode).
+    event_loop(NewStates, 0, DebugMode).
 
 read_key(Input) :-
     get_single_char(C1),
