@@ -14,7 +14,7 @@
 
 :- use_module('editorState.pl').
 :- use_module('extended_piece_table.pl').
-:- use_module('filemanager.pl').
+:- use_module('file_manager.pl').
 
 % ----- Entry Point -----
 handle_mode(State, Input, NewState) :-
@@ -178,18 +178,34 @@ handle_command_mode(State, Input, NewState) :-
     string_concat(CB, Input, NewCB),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
 
+trim_string(Str, Trimmed) :-
+    string_chars(Str, Chars),
+    trim_leading(Chars, NoLeading),
+    reverse(NoLeading, Rev),
+    trim_leading(Rev, NoTrailingRev),
+    reverse(NoTrailingRev, TrimmedChars),
+    string_chars(Trimmed, TrimmedChars).
+
+trim_leading([' ' | T], R) :- trim_leading(T, R), !.
+trim_leading(['\t' | T], R) :- trim_leading(T, R), !.
+trim_leading(['\n' | T], R) :- trim_leading(T, R), !.
+trim_leading(['\r' | T], R) :- trim_leading(T, R), !.
+trim_leading(L, L).
+
   % Handle Command
 handle_command(State, Input, NewState) :-
     atomic_list_concat(Parts, ' ', Input),
     Parts = [Command | RawArgsList],
+    atom_string(Command, StringCommand),
     atomic_list_concat(RawArgsList, ' ', RawArgs),
-    normalize_space(RawArgs, Args),
-    ( Command =:= "w"  -> save_file(State, false, Args, NewState)
-    ; Command =:= "w!" -> save_file(State, True, Args, NewState)
-    ; Command =:= "q"  -> quit_editor(State, NewState)
-    ; Command =:= "q!" -> NewState = editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)
-    ; Command =:= "wq" -> save_and_quit(State, false, Args, NewState)
-    ; Command =:= "wq!" -> save_and_quit(State, true, Args, NewState)
+    atom_string(RawArgs, StringRawArgs),
+    normalize_space(string(Args), StringRawArgs),
+    ( StringCommand == "w"  -> save_file(State, false, Args, NewState), !
+    ; StringCommand == "w!" -> save_file(State, True, Args, NewState)
+    ; StringCommand == "q"  -> quit_editor(State, NewState)
+    ; StringCommand == "q!" -> NewState = editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)
+    ; StringCommand == "wq" -> save_and_quit(State, false, Args, NewState)
+    ; Command == "wq!" -> save_and_quit(State, true, Args, NewState)
     ; set_error(State, "Command not found.", NewState)
 ).
 

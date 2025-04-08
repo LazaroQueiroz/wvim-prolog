@@ -57,8 +57,8 @@ event_loop(States, Index, Args) :-
     update_viewport(View, Cursor, UpdatedViewport),
     UpdatedViewportState = editor_state(Mode, PT, Cursor, UpdatedViewport, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     replace_at(Index, UpdatedViewportState, States, NewStates),
-    !,
-    event_loop(NewStates, 0, Args).
+    is_running(NewStates),
+    event_loop(NewStates, Index, Args).
 
 read_key(Input) :-
     get_single_char(C1),
@@ -116,7 +116,7 @@ replace_at(I, New, [X|Xs], [X|Rest]) :-
     replace_at(I1, New, Xs, Rest).
 
 % ----- Is Running? -----
-is_running(editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)) :- !, fail.
+is_running([editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)]) :- halt.
 is_running(_) :- true.
 
 :- initialization(start_editor, main).
