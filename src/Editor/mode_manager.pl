@@ -9,7 +9,10 @@
     handle_insert/3,
     handle_delete/2,
     handle_replace/3,
-    switch_mode/4
+    switch_mode/4,
+    add_current_state_to_undo_stack/2,
+    undo_editor_state/2,
+    redo_editor_state/2
 ]).
 
 :- use_module('editorState.pl').
@@ -29,10 +32,43 @@ handle_mode_dispatch(substitution, State, Input, NewState) :- handle_substitutio
 handle_mode_dispatch(command, State, Input, NewState) :- handle_command_mode(State, Input, NewState).
 handle_mode_dispatch(_, State, _, State).
 
+add_current_state_to_undo_stack(
+  editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, RedoStack, VS, CopyText, Search), 
+  editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, NewUndoStack, RedoStack, VS, CopyText, Search)
+) :-
+  ( UndoStack = [LastState | _],
+    LastState = editor_state(_, LastPT, LastCursor, _, _, _, _, _, _, _, _, _, _),
+    ( PT \= LastPT)
+  ->
+    append([editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search)], UndoStack, NewUndoStack),
+    writeln("Change detected, pushing to undo stack.")
+  ;
+    NewUndoStack = UndoStack,
+    writeln("No change detected, not adding to undo stack.(No Change)")
+  ).
+
+% add_current_state_to_undo_stack(
+%   editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PreviousState | UndoTail], RedoStack, VS, CopyText, Search), 
+%   CurrentState 
+% ) :-
+%   write("adding a old thing that was not in the last one: "), writeln(PT),
+%   CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PreviousState | UndoTail], RedoStack, VS, CopyText, Search), 
+%   PreviousState = editor_state(_, PT, _, View, FS, FN, SB, CB, [], [], VS, _, _).
+%
+% add_current_state_to_undo_stack(
+%   editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, RedoStack, VS, CopyText, Search), 
+%   editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [CurrentStateToUndoStack | UndoStack], RedoStack, VS, CopyText, Search) 
+% ) :-
+%   writeln("adding a new thing that was not in the last one"),
+%   CurrentStateToUndoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search).
+
 % Normal Mode Handler
 % cursor_xy_to_string_index(+Cursor, +LineSizes, +Acc, +LineIndex, -Index)
-handle_normal_mode(State, "i", NewState) :- 
-    State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+handle_normal_mode(OldState, "i", NewState) :- 
+    OldState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+    write("\n\n\nTHIS IS THE OLD STATE: "), writeln(OldState),
+    add_current_state_to_undo_stack(OldState, State), 
+    write("\n\n\nTHIS IS THE New STATE: "), writeln(State),
     PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
     cursor(X, Y) = Cursor,
     cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, NewInsertStartIndex), 
@@ -63,7 +99,32 @@ handle_normal_mode(State, "v", NewState) :- switch_mode(State, visual, false, Ne
 handle_normal_mode(State, "R", NewState) :- switch_mode(State, replace, false, NewState).
 handle_normal_mode(State, ":", NewState) :- switch_mode(State, command, false, NewState).
 handle_normal_mode(State, "/", NewState) :- switch_mode(State, substitution, false, NewState).
+handle_normal_mode(State, "u", NewState) :- write("\n\n\n\n\n\n\n\n\n\nGOING TO UNDO"), undo_editor_state(State, NewState).
+handle_normal_mode(State, "t", NewState) :- redo_editor_state(State, NewState).
 handle_normal_mode(State, Input, NewState) :- update_editor_cursor(State, Input, NewState).
+
+undo_editor_state(editor_state(Mode, PT, Cursor, View, FS, FN, SB,CB, [], RedoStack, VS, CopyText, Search), State) :- 
+  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], RedoStack, VS, CopyText, Search),
+  writeln("\n\n\n\n\nthe first state is the same as the previous one"), !.  % Nada para desfazer
+
+undo_editor_state(
+    editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PrevState | UndoTail], RedoStack, VS, CopyText, Search),
+    editor_state(PrevMode, PrevPT, PrevCursor, PrevView, PrevFS, PrevFN, PrevSB, PrevCB, UndoTail, [CurrentStateToRedoStack|RedoStack], PrevVS, PrevCopyText, PrevSearch)
+) :-
+    CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PrevState | UndoTail], RedoStack, VS, CopyText, Search),
+    writeln("\n\n\n\n\nUNDOING WHEN ITS THE SAME"),
+    CurrentStateToRedoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search),
+    PrevState = editor_state(PrevMode, PrevPT, PrevCursor, PrevView, PrevFS, PrevFN, PrevSB, PrevCB, _, _, PrevVS, PrevCopyText, PrevSearch).
+
+redo_editor_state(editor_state(_, _, _, _, _, _, _, _, _, [], _, _, _)=State, State) :- !.  % Nada para desfazer
+redo_editor_state(
+    editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, [NextState|RedoTail], VS, CopyText, Search)=CurrentState,
+    editor_state(PrevMode, PrevPT, PrevCursor, NextView, NextFS, NextFN, NextSB, NextCB, [CurrentStateToUndoStack | UndoStack], RedoTail, NextVS, NextCopyText, NextSearch)
+) :-
+    writeln("\n\n\n\n\nREDOING WHEN ITS THE SAME"),
+    CurrentStateToUndoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search),
+    NextState = editor_state(NextMode, NextPT, NextCursor, NextView, NextFS, NextFN, NextSB, NextCB, _, _, NextVS, NextCopyText, NextSearch).
+
 
 % Visual Mode Handler
 handle_visual_mode(State, "\u001B", NewState) :- switch_mode(State, normal, false, NewState).

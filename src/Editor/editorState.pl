@@ -49,9 +49,13 @@ default_editor_state(Rows, Cols, Filename, EditorState) :-
     default_viewport(Rows, Cols, Viewport),
     FileStatus = saved,
     StatusBar = status_bar(no_exception, ""),
-    EditorState = editor_state(
+    EditorStateToUndoStack = editor_state(
         normal, PieceTable, Cursor, Viewport, FileStatus,
         Filename, StatusBar, "", [], [], 0, "", ""
+    ), 
+    EditorState = editor_state(
+        normal, PieceTable, Cursor, Viewport, FileStatus,
+        Filename, StatusBar, "", [EditorStateToUndoStack], [], 0, "", ""
     ).
 
 % ----- Editor State from File -----
