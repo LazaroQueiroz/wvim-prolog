@@ -3,7 +3,6 @@
 % ======================
 
 :- module(editor_main, [start_editor/0]).
-
 :- use_module(library(readutil)).
 :- use_module(library(tty)).
 :- use_module(library(system)).
@@ -52,13 +51,15 @@ event_loop(States, Index, Args) :-
     render(CurrentState),
     read_key(Code),
     string_codes(Input, Code),
+    handle_other_inputs(Input, CurrentState, States, Index, NewStates, NewIndex), 
     handle_mode(CurrentState, Input, UpdatedState),
     UpdatedState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     update_viewport(View, Cursor, UpdatedViewport),
     UpdatedViewportState = editor_state(Mode, PT, Cursor, UpdatedViewport, FS, FN, SB, CB, U, R, VS, CopyText, Search),
-    replace_at(Index, UpdatedViewportState, States, NewStates),
-    is_running(NewStates),
-    event_loop(NewStates, Index, Args).
+    replace_at(Index, UpdatedViewportState, NewStates, UpdatedStates),
+    (Mode == closed -> FinalIndex = 0; FinalIndex = NewIndex),
+    is_running(UpdatedStates),
+    event_loop(UpdatedStates, FinalIndex, Args).
 
 read_key(Input) :-
     get_single_char(C1),
@@ -82,41 +83,41 @@ event_loop(_, Index) :-
     Index =:= -1, 
     format("~nExiting PrologVim~n", []).
 
+
 % ----- Input Handler -----
-handle_input("[", _, States, Index, States, NewIndex) :-
-    NewIndex is max(0, Index - 1).
-
-handle_input("]", _, States, Index, States, NewIndex) :-
+handle_other_inputs("[", _, States, Index, States, NewIndex) :-
+    NewIndex is max(0, Index - 1), !.
+handle_other_inputs("]", _, States, Index, States, NewIndex) :-
     length(States, Len),
-    NewIndex is min(Len - 1, Index + 1).
-
-handle_input("{", CurrentState, States, Index, NewStates, NewIndex) :-
+    NewIndex is min(Len - 1, Index + 1), !.
+handle_other_inputs("{", CurrentState, States, Index, NewStates, NewIndex) :-
     CurrentState = editor_state(_, _, _, Viewport, _, _, _, _, _, _, _, _, _),
-    Viewport = viewport(Rows, Cols),
+    Viewport = viewport(Rows, Cols, _, _),
     default_editor_state(Rows, Cols, "", NewState),
     append(States, [NewState], NewStates),
     length(NewStates, L),
-    NewIndex is L - 1.
+    NewIndex is L - 1, !.
+handle_other_inputs(Input, CurrentState, States, Index, States, Index).
 
-handle_input(Input, CurrentState, States, Index, NewStates, Index) :-
-    handle_key_press(CurrentState, Input, NewState),
-    % update_editor_viewport(NewState1, NewState),
-    replace_at(Index, NewState, States, NewStates).
 
 handle_key_press(State, Char, NewState) :-
     member(Char, [104, 106, 107, 108, 113]),
     update_editor_cursor(State, Char, NewState).
 
 
-% ----- Replace At Index -----
-replace_at(0, New, [_|Xs], [New|Xs]).
+% % ----- Replace At Index -----
+replace_at(0, New, [_|Xs], Xs) :-
+  New = editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _).
+replace_at(0, New, [_|Xs], [New|Xs]) :-
+  New = editor_state(Mode, _, _, _, _, _, _, _, _, _, _, _, _), 
+  not(Mode == closed).
 replace_at(I, New, [X|Xs], [X|Rest]) :-
     I > 0,
     I1 is I - 1,
     replace_at(I1, New, Xs, Rest).
 
 % ----- Is Running? -----
-is_running([editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)]) :- halt.
+is_running([]) :- halt.
 is_running(_) :- true.
 
 :- initialization(start_editor, main).

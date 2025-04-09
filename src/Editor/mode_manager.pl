@@ -20,6 +20,9 @@
 :- use_module('file_manager.pl').
 
 % ----- Entry Point -----
+handle_mode(State, "[", State) :- !.
+handle_mode(State, "]", State) :- !.
+handle_mode(State, "}", State) :- !.
 handle_mode(State, Input, NewState) :-
     State = editor_state(Mode, _, _, _, _, _, _, _, _, _, _, _, _),
     handle_mode_dispatch(Mode, State, Input, NewState).
@@ -244,16 +247,17 @@ trim_leading(L, L).
 
   % Handle Command
 handle_command(State, Input, NewState) :-
+    State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     atomic_list_concat(Parts, ' ', Input),
     Parts = [Command | RawArgsList],
     atom_string(Command, StringCommand),
     atomic_list_concat(RawArgsList, ' ', RawArgs),
     atom_string(RawArgs, StringRawArgs),
     normalize_space(string(Args), StringRawArgs),
-    ( StringCommand == "w"  -> save_file(State, false, Args, NewState), !
-    ; StringCommand == "w!" -> save_file(State, True, Args, NewState)
+    ( StringCommand == "w"  -> save_file(State, false, StringRawArgs, NewState), !
+    ; StringCommand == "w!" -> save_file(State, True, StringRawArgs, NewState)
     ; StringCommand == "q"  -> quit_editor(State, NewState)
-    ; StringCommand == "q!" -> NewState = editor_state(closed, _, _, _, _, _, _, _, _, _, _, _, _)
+    ; StringCommand == "q!" -> NewState = editor_state(closed, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search)
     ; StringCommand == "wq" -> save_and_quit(State, false, Args, NewState)
     ; Command == "wq!" -> save_and_quit(State, true, Args, NewState)
     ; set_error(State, "Command not found.", NewState)

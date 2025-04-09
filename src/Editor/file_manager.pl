@@ -30,7 +30,7 @@ write_file(State, Path, NewState) :-
     close(Stream),
     rename_file(TempFile, Path),
     clear_error(StatusBar, NewStatusBar),
-    ( Filename == "" -> FinalName = FName ; FinalName = Filename ),
+    ( FN == "" -> FinalName = FName ; FinalName = FN ),
       NewState = editor_state(Mode, PT, Cursor, View, saved, FinalName, NewStatusBar, "", U, R, VS, CopyText, Search).
 split_dir_filename(Path, DName, FName) :-
     atomic_list_concat(Parts, '/', Path),
