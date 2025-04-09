@@ -18,6 +18,7 @@
 :- use_module('editorState.pl').
 :- use_module('extended_piece_table.pl').
 :- use_module('file_manager.pl').
+:- use_module('motion_handler.pl').
 
 % ----- Entry Point -----
 handle_mode(State, Input, NewState) :-
@@ -31,7 +32,6 @@ handle_mode_dispatch(replace, State, Input, NewState) :- handle_replace_mode(Sta
 handle_mode_dispatch(substitution, State, Input, NewState) :- handle_substitution_mode(State, Input, NewState).
 handle_mode_dispatch(command, State, Input, NewState) :- handle_command_mode(State, Input, NewState).
 handle_mode_dispatch(_, State, _, State).
-
 
 % add_current_state_to_undo_stack(
 %   editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], RedoStack, VS, CopyText, Search),
@@ -86,13 +86,20 @@ handle_normal_mode(OldState, "a", NewState) :-
     % NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
     % AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     % switch_mode(AuxiliaryState, insert, false, NewState).
+ 
 handle_normal_mode(State, "v", NewState) :- switch_mode(State, visual, false, NewState).
 handle_normal_mode(State, "R", NewState) :- switch_mode(State, replace, false, NewState).
 handle_normal_mode(State, ":", NewState) :- switch_mode(State, command, false, NewState).
 handle_normal_mode(State, "/", NewState) :- switch_mode(State, substitution, false, NewState).
 handle_normal_mode(State, "u", NewState) :- undo_editor_state(State, NewState).
 handle_normal_mode(State, "t", NewState) :- redo_editor_state(State, NewState).
-handle_normal_mode(State, Input, NewState) :- update_editor_cursor(State, Input, NewState).
+handle_normal_mode(State, Input, NewState) :-
+  (member(Input, ["h", "j", "k", "l"])
+  ;
+  atom_chars(Input, Chars),
+  Chars = ['\u001B' | _]),
+  update_editor_cursor(State, Input, NewState), !.
+handle_normal_mode(State, Input, NewState) :- atom_chars(Input, Chars), handle_motion(State, Chars, NewState).
 
 undo_editor_state(editor_state(Mode, PT, Cursor, View, FS, FN, SB,CB, [], RedoStack, VS, CopyText, Search), State) :- 
   State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], RedoStack, VS, CopyText, Search),!.  % Nada para desfazer
@@ -114,7 +121,6 @@ redo_editor_state(
     CurrentStateToUndoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search),
     NextState = editor_state(NextMode, NextPT, NextCursor, NextView, NextFS, NextFN, NextSB, NextCB, _, _, NextVS, NextCopyText, NextSearch).
 
-
 % Visual Mode Handler
 handle_visual_mode(State, "\u001B", NewState) :- switch_mode(State, normal, false, NewState).
 handle_visual_mode(State, "v", State) :- State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
@@ -124,7 +130,7 @@ handle_visual_mode(State, "v", State) :- State = editor_state(_, PT, Cursor, Vie
     Start is min(VS, Index),
     End is max(VS, Index),
     sub_string(Str, Start, Len, _, CopyText), Len is End - Start + 1,
-    NewState = editor_state(normal, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search).
+    NewState = editor_state(normal, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search), write(["VS:", VS, "CopyText: ", CP]).
 handle_visual_mode(State, Input, NewState) :- update_editor_cursor(State, Input, NewState).
 
 % Insert Mode Handler

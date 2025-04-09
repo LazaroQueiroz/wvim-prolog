@@ -84,7 +84,7 @@ move_cursor("\e[C", Cursor, LineSizes, IsInsertMode, NewCursor) :-
   NewCursor = cursor(X, NY).
 
 % Enter
-move_cursor("\r", Cursor, LineSizes, IsInsertMode, NewCursor) :-
+move_cursor("\r", Cursor, LineSizes, 0, NewCursor) :-
   cursor(X, Y) = Cursor,
   NX is X + 1,
   NewCursor = cursor(NX, 0).
