@@ -4,7 +4,7 @@
 
 % ----- Placeholder Renderer -----
 render(State) :-
-  % tty_clear,
+  tty_clear,
   State = editor_state(Mode, PieceTable, Cursor, Viewport, _, Filename, StatusBar, CommandBuffer, _, _, _, _, _),
   render_viewport(PieceTable, Viewport),
   render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename, CommandBuffer),
