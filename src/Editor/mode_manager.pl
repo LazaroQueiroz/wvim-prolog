@@ -92,7 +92,10 @@ handle_normal_mode(OldState, "a", NewState) :-
 handle_normal_mode(State, "v", NewState) :- switch_mode(State, visual, false, NewState).
 handle_normal_mode(State, "R", NewState) :- switch_mode(State, replace, false, NewState).
 handle_normal_mode(State, ":", NewState) :- switch_mode(State, command, false, NewState).
-handle_normal_mode(State, "/", NewState) :- switch_mode(State, substitution, false, NewState).
+handle_normal_mode(State, "/", NewState) :- 
+  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, RedoStack, VS, CopyText, _),  % Nada para desfazer
+  NoSearchBufferState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, RedoStack, VS, CopyText, ""),  % Nada para desfazer
+  switch_mode(NoSearchBufferState, substitution, false, NewState).
 handle_normal_mode(State, "u", NewState) :- undo_editor_state(State, NewState).
 handle_normal_mode(State, "t", NewState) :- redo_editor_state(State, NewState).
 handle_normal_mode(State, Input, NewState) :- update_editor_cursor(State, Input, NewState).
@@ -120,7 +123,8 @@ redo_editor_state(
 
 % Visual Mode Handler
 handle_visual_mode(State, "\u001B", NewState) :- switch_mode(State, normal, false, NewState).
-handle_visual_mode(State, "v", State) :- State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
+handle_visual_mode(State, "v", NewState) :- 
+    State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
     PT = piece_table(_, _, _, _, _, Lines),
     cursor_xy_to_string_index(Cursor, Lines, 0, 0, Index),
     extended_piece_table_to_string(PT, Str),
@@ -158,14 +162,36 @@ handle_replace_mode(State, Input, NewState) :- handle_replace(State, Input, NewS
 
 % Substitution Mode Handler
 handle_substitution_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
+handle_substitution_mode(State, "\r", NewState) :- 
+  handle_substitution(State, NewState). 
 handle_substitution_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     string_length(Search, Len), Len > 0,
-    sub_string(Search, 0, Len-1, _, NewSearch),
+    LenMinusOne is Len - 1,
+    sub_string(Search, 0, LenMinusOne, _, NewSearch),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch).
 handle_substitution_mode(State, Input, NewState) :-
     State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     string_concat(Search, Input, NewSearch),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch).
+
+handle_substitution(OldState, SubstitutedState) :-
+  add_current_state_to_undo_stack(OldState, State), 
+  State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
+  split_string(SearchBuffer, "/", "/", Parts),
+  length(Parts, L),
+  L > 1,
+  extended_piece_table_to_string(PT, Str),
+  [ReplaceWord, WithWord] = Parts,
+  re_replace(ReplaceWord, WithWord, Str, SubstitutedStr),
+  create_extended_piece_table(SubstitutedStr, NewPT),
+  SubstitutedState = editor_state(normal, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer).
+
+handle_substitution(OldState, OldState) :-
+  State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
+  split_string(SearchBuffer, "/", "/", Parts),
+  length(Parts, L),
+  L =< 1.
+
 
 % Handle insert
 handle_insert(State, Input, NewState) :-
@@ -221,7 +247,8 @@ switch_mode(State, NewMode, _, NewState) :-
 handle_command_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
 handle_command_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     string_length(CB, Len), Len > 0,
-    sub_string(CB, 0, Len-1, _, NewCB),
+    LenMinusOne is Len - 1,
+    sub_string(CB, 0, LenMinusOne, _, NewCB),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
 handle_command_mode(State, "\r", NewState) :- 
     State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
