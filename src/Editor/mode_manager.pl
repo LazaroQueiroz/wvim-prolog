@@ -17,6 +17,9 @@
 :- use_module('file_manager.pl').
 
 % ----- Entry Point -----
+handle_mode(State, "]", State).
+handle_mode(State, "[", State).
+handle_mode(State, "}", State).
 handle_mode(State, Input, NewState) :-
     State = editor_state(Mode, _, _, _, _, _, _, _, _, _, _, _, _),
     handle_mode_dispatch(Mode, State, Input, NewState).

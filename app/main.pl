@@ -52,13 +52,14 @@ event_loop(States, Index, Args) :-
     render(CurrentState),
     read_key(Code),
     string_codes(Input, Code),
+    (Input == "]" -> NewIndex is Index + 1; NewIndex is Index),
     handle_mode(CurrentState, Input, UpdatedState),
     UpdatedState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     update_viewport(View, Cursor, UpdatedViewport),
     UpdatedViewportState = editor_state(Mode, PT, Cursor, UpdatedViewport, FS, FN, SB, CB, U, R, VS, CopyText, Search),
-    replace_at(Index, UpdatedViewportState, States, NewStates),
+    replace_at(NewIndex, UpdatedViewportState, States, NewStates),
     is_running(NewStates),
-    event_loop(NewStates, Index, Args).
+    event_loop(NewStates, NewIndex, Args).
 
 read_key(Input) :-
     get_single_char(C1),
