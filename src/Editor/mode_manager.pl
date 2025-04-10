@@ -10,9 +10,7 @@
     handle_delete/2,
     handle_replace/3,
     switch_mode/4,
-    add_current_state_to_undo_stack/2,
-    undo_editor_state/2,
-    redo_editor_state/2
+    add_current_state_to_undo_stack/2
 ]).
 
 :- use_module('editorState.pl').
@@ -93,8 +91,6 @@ handle_normal_mode(State, "/", NewState) :-
   State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, RedoStack, VS, CopyText, _),  % Nada para desfazer
   NoSearchBufferState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, RedoStack, VS, CopyText, ""),  % Nada para desfazer
   switch_mode(NoSearchBufferState, substitution, false, NewState).
-handle_normal_mode(State, "u", NewState) :- undo_editor_state(State, NewState).
-handle_normal_mode(State, "t", NewState) :- redo_editor_state(State, NewState).
 handle_normal_mode(State, Input, NewState) :-
   (member(Input, ["h", "j", "k", "l"])
   ;
@@ -102,27 +98,6 @@ handle_normal_mode(State, Input, NewState) :-
   Chars = ['\u001B' | _]),
   update_editor_cursor(State, Input, NewState), !.
 handle_normal_mode(State, Input, NewState) :- atom_chars(Input, Chars), handle_motion(State, Chars, NewState).
-
-undo_editor_state(editor_state(Mode, PT, Cursor, View, FS, FN, SB,CB, [], RedoStack, VS, CopyText, Search), State) :- 
-  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], RedoStack, VS, CopyText, Search),!.  % Nada para desfazer
-undo_editor_state(
-    editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PrevState | UndoTail], RedoStack, VS, CopyText, Search),
-    editor_state(PrevMode, PrevPT, PrevCursor, PrevView, PrevFS, PrevFN, PrevSB, PrevCB, UndoTail, [CurrentStateToRedoStack|RedoStack], PrevVS, PrevCopyText, PrevSearch)
-) :-
-    CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PrevState | UndoTail], RedoStack, VS, CopyText, Search),
-    CurrentStateToRedoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search),
-    PrevState = editor_state(PrevMode, PrevPT, PrevCursor, PrevView, PrevFS, PrevFN, PrevSB, PrevCB, _, _, PrevVS, PrevCopyText, PrevSearch).
-
-redo_editor_state(editor_state(Mode, PT, Cursor, View, FS, FN, SB,CB, UndoStack, [], VS, CopyText, Search), State) :- 
-  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, [], VS, CopyText, Search),!.  % Nada para refazer
-redo_editor_state(
-    editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, [NextState|RedoTail], VS, CopyText, Search),
-    editor_state(NextMode, NextPT, NextCursor, NextView, NextFS, NextFN, NextSB, NextCB, [CurrentStateToUndoStack | UndoStack], RedoTail, NextVS, NextCopyText, NextSearch)
-) :-
-    CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, [NextState|RedoTail], VS, CopyText, Search),
-    CurrentStateToUndoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search),
-    NextState = editor_state(NextMode, NextPT, NextCursor, NextView, NextFS, NextFN, NextSB, NextCB, _, _, NextVS, NextCopyText, NextSearch).
-
 
 % Visual Mode Handler
 handle_visual_mode(State, "\u001B", NewState) :- switch_mode(State, normal, false, NewState).
