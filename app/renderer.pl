@@ -24,8 +24,10 @@ render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename, StatusBar, Comma
   ; write("Path: "), write(Filename), write(" | ")
   ),
   ( Mode == command -> write(":"), write(CommandBuffer), write(" | Copy: ") ; write("Copy: ")),
-  write(CopyBuffer), write(" | Search: "),
-  write(SearchBuffer), write(" | "),
+  take_string(10, CopyBuffer, CopyBufferToPrint),
+  take_string(10, SearchBuffer, SearchBufferToPrint),
+  write(CopyBufferToPrint), write(" | Search: "),
+  write(SearchBufferToPrint), write(" | "),
   % write(Pieces), write(" | "),
   % write(LineSizes), write(" | "), 
   % write(InsertIndex), write(" | "),

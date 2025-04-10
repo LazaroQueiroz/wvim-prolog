@@ -187,7 +187,7 @@ remove_line(State, NewState) :-
     State = editor_state(M, PT, Cursor, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
     PT = piece_table(Pieces, Orig, Add, Insert, Index, LineSizes),
     Cursor = cursor(X, Y),
-    add_to_undo_stack(CurrentState, Undo, NewUndo),
+    add_to_undo_stack(State, Undo, NewUndo),
     length(LineSizes, N),
     LN is N - 1,
  
