@@ -43,7 +43,6 @@ get_terminal_size(Rows, Cols) :-
     atomic_list_concat([R, C], ' ', Atom),
     atom_number(R, Rows),
     atom_number(C, Cols).
-
 % ----- Event Loop -----
 event_loop(States, Index, Args) :-
     nth0(Index, States, CurrentState),

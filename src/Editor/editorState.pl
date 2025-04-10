@@ -89,12 +89,12 @@ add_to_undo_stack(CurrentState, UndoStack, NewStack) :-
     % clear undo/redo from snapshot
     CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, _, _, VS, Copy, Search),
     Snapshot = editor_state(M, PT, C, V, FS, FN, SB, CB, [], [], VS, Copy, Search),
-    append(UndoStack, [Snapshot], NewStack).
+    append([Snapshot], UndoStack, NewStack).
 
 % ----- Add to Redo Stack -----
 add_to_redo_stack(CurrentState, RedoStack, NewStack) :-
     CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, _, _, VS, Copy, Search),
     Snapshot = editor_state(M, PT, C, V, FS, FN, SB, CB, [], [], VS, Copy, Search),
-    NewStack = [Snapshot|RedoStack].
+    append([Snapshot], RedoStack, NewStack).
 
 

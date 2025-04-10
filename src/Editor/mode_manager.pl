@@ -138,7 +138,12 @@ handle_insert_mode(State, Input, NewState) :-
 % Replace Mode Handler
 handle_replace_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
 handle_replace_mode(State, "\u007F", NewState) :- handle_delete(State, NewState).
-handle_replace_mode(State, Input, NewState) :- handle_replace(State, Input, NewState).
+handle_replace_mode(OldState, Input, NewState) :- 
+  writeln("HANDLING REPLACE MODE"),
+  OldState = editor_state(_, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
+  OldStateToUndoStack = editor_state(normal, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
+  add_current_state_to_undo_stack(OldStateToUndoStack, State), 
+  handle_replace(State, Input, NewState).
 
 % Substitution Mode Handler
 handle_substitution_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
@@ -217,7 +222,10 @@ handle_delete(State, NewState) :-
     NewState = editor_state(M, NewPT, NewCursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search).
 
 % Handle replace
-handle_replace(State, Input, NewState) :- handle_insert(State, Input, NewState).
+handle_replace(State, Input, NewState) :- 
+  writeln("HANDLING REPLACE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+  handle_delete(State, AuxiliaryState),
+  handle_insert(AuxiliaryState, Input, NewState).
 
 % Switch mode
 switch_mode(State, NewMode, _, NewState) :-

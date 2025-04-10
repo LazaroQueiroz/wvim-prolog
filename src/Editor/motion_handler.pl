@@ -27,6 +27,7 @@
 ]).
 
 :- use_module('editorState.pl').
+:- use_module('cursor.pl').
 :- use_module('extended_piece_table.pl').
 :- use_module('mode_manager.pl').
 
@@ -317,6 +318,7 @@ run_motion(State, [N], NewState) :- move_to_previous_regex_occurrence(State, New
 run_motion(State, Motion, NewState) :-
     Motion = [Head | MotionChars],
     last(MotionChars, Last),
+    write("this is the last: "), writeln(Last),
     ( Head == 'r' -> replace_char(State, Last, NewState)
     ; Head == 'd', Last == 'd' -> remove_line(State, NewState)
     ; NewState = State), !.
@@ -407,13 +409,13 @@ iterate_to_previous_regex_occurrence(Regex, Text, Cursor, NewCursor, LineSizes) 
 replace_char(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Char, NewState) :-
     add_to_undo_stack(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Undo, NewUndo),
     PT = piece_table(Pieces, Orig, Add, Insert, _, LineSizes),
-    cursor_xy_to_string_index(C, LineSizes, 0, 0, Index),
+    move_cursor("l", C, LineSizes, 0, Cursor),
+    cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, Index),
     delete_text(Index, 1, PT, TempPT),
     TempPT = piece_table(P2, O2, A2, Insert2, _, LS2),
     string_concat(Insert2, Char, NewInsert),
-    insert_text(piece_table(P2, O2, A2, NewInsert, Index, LS2), NewPT),
-    C = cursor(X, Y),
-    FinalCursor = cursor(X, Y+1),
-    NewState = editor_state(M, NewPT, FinalCursor, V, FS, FN, SB, CB, NewUndo, [], VS, Copy, Search).
+    RightIndex is max(0, Index - 1),
+    insert_text(piece_table(P2, O2, A2, NewInsert, RightIndex, LS2), NewPT),
+    NewState = editor_state(M, NewPT, Cursor, V, FS, FN, SB, CB, NewUndo, [], VS, Copy, Search).
 
 
