@@ -318,7 +318,6 @@ run_motion(State, [N], NewState) :- move_to_previous_regex_occurrence(State, New
 run_motion(State, Motion, NewState) :-
     Motion = [Head | MotionChars],
     last(MotionChars, Last),
-    write("this is the last: "), writeln(Last),
     ( Head == 'r' -> replace_char(State, Last, NewState)
     ; Head == 'd', Last == 'd' -> remove_line(State, NewState)
     ; NewState = State), !.

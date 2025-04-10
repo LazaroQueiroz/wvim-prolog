@@ -109,7 +109,8 @@ split_lines(Text, Lines) :-
 
 % get_lines_sizes(+String, +CurrentLen, +Acc, -Sizes)
 get_lines_sizes([], Len, Acc, Sizes) :- reverse([Len|Acc], Sizes).
-get_lines_sizes(['\r'|T], Len, Acc, Sizes) :- get_lines_sizes(T, 0, [Len|Acc], Sizes).
+get_lines_sizes(['\n'|T], Len, Acc, Sizes) :- get_lines_sizes(T, 0, [Len|Acc], Sizes), !.
+get_lines_sizes(['\r'|T], Len, Acc, Sizes) :- get_lines_sizes(T, 0, [Len|Acc], Sizes), !.
 get_lines_sizes([_|T], Len, Acc, Sizes) :- 
   Len1 is Len + 1, 
   get_lines_sizes(T, Len1, Acc, Sizes).
