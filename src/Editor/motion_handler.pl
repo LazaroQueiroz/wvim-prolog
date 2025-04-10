@@ -10,8 +10,8 @@
     remove_line/2,
     replace_char/3,
     delete_char/2,
-    undo_editorstate/2,
-    redo_editorstate/2,
+    undo_editor_state/2,
+    redo_editor_state/2,
     move_to_start_of_line/2,
     move_to_end_of_line/2,
     move_to_next_word/2,
@@ -33,14 +33,41 @@
 % ===============================
 % PROLOG: Motion Handler
 % ===============================
+valid_motion_char('$').
+valid_motion_char('w').
+valid_motion_char('b').
+valid_motion_char('x').
+valid_motion_char('o').
+valid_motion_char('u').
+valid_motion_char('t').
+valid_motion_char('p').
+valid_motion_char('n').
+valid_motion_char('N').
+valid_motion_char('^').
 
 % Input check-up
 handle_motion(State, Input, NewState) :-
-    %[FirstChar | Rest] = Input,
-    %valid_motion_char(FirstChar),
-    %Command = [FirstChar | Rest],
-    split_num_cmd(Input, Multiplier, Motion),
-    run_command(State, Multiplier, Motion, NewState).
+    [FirstChar | Rest] = Input,
+    ( valid_motion_char(FirstChar) -> 
+      split_num_cmd(Input, Multiplier, Motion),
+      run_command(State, Multiplier, Motion, NewState)
+    ; get_remaining_input(Input, NewInput),
+      split_num_cmd(NewInput, Multiplier, Motion),
+      run_command(State, Multiplier, Motion, NewState)
+).
+
+get_remaining_input(Input, NewInput) :-
+  [Head | Rest] = Input,
+  get_single_char(Code),
+  char_code(HeadChar, Code),
+  ( valid_motion_char(HeadChar) ->
+      append(Input, [HeadChar], NewInput)
+  ; \+ char_type(HeadChar, digit),
+    \+ char_type(Head, digit) ->
+      append(Input, [HeadChar], NewInput)
+  ; get_remaining_input([HeadChar], AllChars),
+    append(Input, AllChars, NewInput)
+  ).
 
 split_num_cmd(Chars, Number, RestChars) :-
   span_digits(Chars, NumChars, RestChars),
@@ -121,23 +148,25 @@ delete_char(CurrentState, NewState) :-
     ),
     NewState = editor_state(M, piece_table(NewPieces, Orig, NewAdd, NewInsert, NewIndex, NewLineSizes), NewCursor, V, FS, FN, SB, CB, NewUndo, Redo, VS, Copy, Search).
 
-undo_editor_state(CurrentState, NewState) :-
-    CurrentState = editor_state(_, _, _, _, _, _, _, _, UndoStack, RedoStack, _, _, _),
-    ( UndoStack = [] -> NewState = CurrentState
-    ; append(NewUndoStack, [LastUndo], UndoStack),
-    add_to_redo_stack(CurrentState, RedoStack, NewRedoStack),
-    LastUndo = editor_state(_, PT, C, V, FS, FN, SB, CB, _, _, VS, Copy, Search),
-    NewState = editor_state(normal, PT, C, V, FS, FN, SB, CB, NewUndoStack, NewRedoStack, VS, Copy, Search)
-    ).
+undo_editor_state(editor_state(Mode, PT, Cursor, View, FS, FN, SB,CB, [], RedoStack, VS, CopyText, Search), State) :- 
+  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], RedoStack, VS, CopyText, Search),!.  % Nada para desfazer
+undo_editor_state(
+    editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PrevState | UndoTail], RedoStack, VS, CopyText, Search),
+    editor_state(PrevMode, PrevPT, PrevCursor, PrevView, PrevFS, PrevFN, PrevSB, PrevCB, UndoTail, [CurrentStateToRedoStack|RedoStack], PrevVS, PrevCopyText, PrevSearch)
+) :-
+    CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [PrevState | UndoTail], RedoStack, VS, CopyText, Search),
+    CurrentStateToRedoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search),
+    PrevState = editor_state(PrevMode, PrevPT, PrevCursor, PrevView, PrevFS, PrevFN, PrevSB, PrevCB, _, _, PrevVS, PrevCopyText, PrevSearch).
 
-redo_editor_state(CurrentState, NewState) :-
-    CurrentState = editor_state(_, _, _, _, _, _, _, _, UndoStack, RedoStack, _, _, _),
-    ( RedoStack = [] -> NewState = CurrentState
-    ; RedoStack = [RedoHead | RedoTail],    
-    add_to_undo_stack(CurrentState, UndoStack, NewUndoStack),
-    RedoHead = editor_state(_, PT, C, V, FS, FN, SB, CB, _, _, VS, Copy, Search),
-    NewState = editor_state(normal, PT, C, V, FS, FN, SB, CB, NewUndoStack, RedoTail, VS, Copy, Search)
-    ).
+redo_editor_state(editor_state(Mode, PT, Cursor, View, FS, FN, SB,CB, UndoStack, [], VS, CopyText, Search), State) :- 
+  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, [], VS, CopyText, Search),!.  % Nada para refazer
+redo_editor_state(
+    editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, [NextState|RedoTail], VS, CopyText, Search),
+    editor_state(NextMode, NextPT, NextCursor, NextView, NextFS, NextFN, NextSB, NextCB, [CurrentStateToUndoStack | UndoStack], RedoTail, NextVS, NextCopyText, NextSearch)
+) :-
+    CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, [NextState|RedoTail], VS, CopyText, Search),
+    CurrentStateToUndoStack = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search),
+    NextState = editor_state(NextMode, NextPT, NextCursor, NextView, NextFS, NextFN, NextSB, NextCB, _, _, NextVS, NextCopyText, NextSearch).
 
 paste_copy_buffer(CurrentState, NewState) :-
     CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
@@ -279,8 +308,8 @@ run_motion(State, [^], NewState) :- move_to_start_of_line(State, NewState), !.
 run_motion(State, [z], NewState):- remove_line(State, NewState), !.
 run_motion(State, [x], NewState) :- delete_char(State, NewState), !.
 run_motion(State, [o], NewState) :- create_new_line(State, NewState), !.
-run_motion(State, [u], NewState) :- undo_editorstate(State, NewState), !.
-run_motion(State, [t], NewState) :- redo_editorstate(State, NewState), !.
+run_motion(State, [u], NewState) :- undo_editor_state(State, NewState), !.
+run_motion(State, [t], NewState) :- redo_editor_state(State, NewState), !.
 run_motion(State, [p], NewState) :- paste_copy_buffer(State, NewState), !.
 run_motion(State, [n], NewState) :- 
   move_to_next_regex_occurrence(State, NewState), !.
@@ -288,9 +317,10 @@ run_motion(State, [N], NewState) :- move_to_previous_regex_occurrence(State, New
 run_motion(State, Motion, NewState) :-
     Motion = [Head | MotionChars],
     last(MotionChars, Last),
-    ( Head == [r] -> replace_char(State, Last, NewState); NewState = State), !.
+    ( Head == 'r' -> replace_char(State, Last, NewState)
+    ; Head == 'd', Last == 'd' -> remove_line(State, NewState)
+    ; NewState = State), !.
 run_motion(State, _, State).
-
 
 move_to_next_word(CurrentState, NewState) :-
   CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
