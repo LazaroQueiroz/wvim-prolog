@@ -16,18 +16,6 @@ Worse Vim is a text editor, inspired by Vim, written in Haskell and Prolog. Crea
 
 ✅ CLI-based interactive interface
 
-## 📥 Requirements
-Follow the step-by-step below in order to get it working:
-
-### 🔹 Haskell
-1. Download the source.
-2. Download GHC (Glasgow Haskell Compiler) and Cabal (Haskell build tool) via the [Haskell Platform](https://www.haskell.org/platform/) or using [ghcup](https://www.haskell.org/ghcup/).
-3. Open the source folder on the terminal.
-4. Compile the text editor using `cabal build` and run it with `cabal run haskell`.
-
-### 🔹 Prolog
-1. Work In Progress
-
 ## 📌 Development Team
 * [Lázaro Queiroz do Nascimento](https://github.com/LazaroQueiroz)
 * [Igor Raffael Menezes de Melo](https://github.com/igor-raffael)
