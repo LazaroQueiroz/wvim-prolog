@@ -31,7 +31,8 @@ write_file(State, Path, NewState) :-
     rename_file(TempFile, Path),
     clear_error(StatusBar, NewStatusBar),
     ( FN == "" -> FinalName = FName ; FinalName = FN ),
-      NewState = editor_state(Mode, PT, Cursor, View, saved, FinalName, NewStatusBar, "", U, R, VS, CopyText, Search).
+    NewState = editor_state(normal, PT, Cursor, View, saved, FinalName, NewStatusBar, "", U, R, VS, CopyText, Search).
+
 split_dir_filename(Path, DName, FName) :-
     atomic_list_concat(Parts, '/', Path),
     append(DirParts, [FName], Parts),
@@ -53,6 +54,6 @@ quit_editor(State, NewState) :-
     ; NewState = editor_state(closed, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search)
 ).
 
-set_error(editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search), Msg, editor_state(normal, PT, Cursor, View, FS, FN, (Exception,Msg), "", U, R, VS, CopyText, Search)).
+set_error(editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search), Msg, editor_state(normal, PT, Cursor, View, FS, FN, status_bar(exception,Msg), "", U, R, VS, CopyText, Search)).
 
-clear_error(editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search), editor_state(Mode, PT, Cursor, View, FS, FN, (NoException,""), "", U, R, VS, CopyText, Search)).
+clear_error(status_bar(_,_), status_bar(no_exception,"")).
