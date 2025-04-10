@@ -188,7 +188,7 @@ handle_substitution(OldState, SubstitutedState) :-
   L > 1,
   extended_piece_table_to_string(PT, Str),
   [ReplaceWord, WithWord] = Parts,
-  re_replace(ReplaceWord, WithWord, Str, SubstitutedStr),
+  re_replace(ReplaceWord/g, WithWord, Str, SubstitutedStr),
   create_extended_piece_table(SubstitutedStr, NewPT),
   SubstitutedState = editor_state(normal, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer).
 
