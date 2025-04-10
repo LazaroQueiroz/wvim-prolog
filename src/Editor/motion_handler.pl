@@ -39,7 +39,6 @@ valid_motion_char('w').
 valid_motion_char('b').
 valid_motion_char('x').
 valid_motion_char('o').
-valid_motion_char('z'). % Placeholder dd
 valid_motion_char('u').
 valid_motion_char('t').
 valid_motion_char('p').
@@ -64,7 +63,7 @@ get_remaining_input(Input, NewInput) :-
   string_codes(Char, [Code]),
   atom_chars(Char, [HeadChar | Rest]),
   ( valid_motion_char(HeadChar) -> append(Input, [HeadChar], NewInput)
-  ; \+ char_type(Char, digit), \+ char_type(Head, digit) -> append(Input, [Char], NewInput)
+  ; \+ char_type(HeadChar, digit), \+ char_type(Head, digit) -> append(Input, [HeadChar], NewInput)
   ; get_remaining_input([Char], AllChars), append(Input, AllChars, NewInput)
 ).
 
@@ -294,9 +293,12 @@ run_motion(State, [p], NewState) :- paste_copy_buffer(State, NewState), !.
 run_motion(State, "n", NewState) :- move_to_next_regex_occurence(State,NewState), !.
 run_motion(State, "N", NewState) :- move_to_previous_regex_occurence(State, NewState), !.
 run_motion(State, Motion, NewState) :-
-    atom_chars(Motion, [Head | MotionChars]),
+    Motion = [Head | MotionChars],
     last(MotionChars, Last),
-    ( Head == [r] -> replace_char(State, Last, NewState); NewState = State), !.
+    ( Head == 'r' -> replace_char(State, Last, NewState)
+    ; Head == 'd', Last == 'd' -> remove_line(State, NewState)
+    ; NewState = State), !.
+run_motion(State, _, State).
 
 
 replace_char(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Char, NewState) :-
