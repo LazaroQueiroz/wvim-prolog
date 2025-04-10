@@ -22,7 +22,7 @@ render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename, CommandBuffer, C
   write(CopyBuffer), write(" | SearchBuffer: "),
   write(SearchBuffer), write(" | "),
   % write(Pieces), write(" | "),
-  % write(LineSizes), write(" | "), 
+  write(LineSizes), write(" | "), 
   write(InsertIndex), write(" | "),
   write(Viewport), write(" | "),
   % write(InsertBuffer), write(" | "),

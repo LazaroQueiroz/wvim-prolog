@@ -17,7 +17,7 @@
 
 % ----- Start Editor -----
 start_editor :-
-  tty_clear,
+  %tty_clear,
   tty_size(Rows, Cols),
   current_prolog_flag(argv, Args),
   editor_state_initialization(Args, Rows, Cols, EditorState),

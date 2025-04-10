@@ -84,7 +84,12 @@ handle_normal_mode(OldState, "a", NewState) :-
   NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
   AuxiliaryState = editor_state(normal, NewPT, NewCursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
   switch_mode(AuxiliaryState, insert, false, NewState).
-handle_normal_mode(State, "v", NewState) :- switch_mode(State, visual, false, NewState).
+handle_normal_mode(State, "v", NewState) :- 
+  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+  PT = piece_table(_, _, _, _, _, LineSizes),
+  cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, CopyStartIndex),
+  AuxiliaryState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, CopyStartIndex, CopyText, Search),
+  switch_mode(AuxiliaryState, visual, false, NewState).
 handle_normal_mode(State, "R", NewState) :- switch_mode(State, replace, false, NewState).
 handle_normal_mode(State, ":", NewState) :- switch_mode(State, command, false, NewState).
 handle_normal_mode(State, "/", NewState) :- 

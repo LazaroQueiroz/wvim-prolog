@@ -97,22 +97,6 @@ split_list_at(Index, List, Left, Right) :-
     length(Left, Index),
     append(Left, Right, List).
 
-run_motion(State, "w", NewState) :- move_to_next_word(State, NewState), !.
-run_motion(State, "b", NewState) :- move_to_previous_word(State, NewState), !.
-run_motion(State, [$], NewState) :- move_to_end_of_line(State, NewState), !.
-run_motion(State, [^], NewState) :- move_to_start_of_line(State, NewState), !.
-run_motion(State, "dd", NewState):- remove_line(State, NewState), !.
-run_motion(State, [x], NewState) :- delete_char(State, NewState), !.
-run_motion(State, [o], NewState) :- create_new_line(State, NewState), !.
-run_motion(State, "u", NewState) :- undo_editorstate(State,NewState), !.
-run_motion(State, "t", NewState) :- redo_editorstate(State,NewState), !.
-run_motion(State, "p", NewState) :- paste_copy_buffer(State,NewState), !.
-run_motion(State, "n", NewState) :- move_to_next_regex_occurence(State,NewState), !.
-run_motion(State, "N", NewState) :- move_to_previous_regex_occurence(State, NewState), !.
-run_motion(State, Motion, NewState) :-
-    atom_chars(Motion, [Head | MotionChars]),
-    last(MotionChars, Last),
-    ( Head == "r" -> replace_char(State, Last, NewState); NewState = State), !.
 
 delete_char(CurrentState, CurrentState) :-
     CurrentState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
@@ -137,26 +121,6 @@ delete_char(CurrentState, NewState) :-
     ),
     NewState = editor_state(M, piece_table(NewPieces, Orig, NewAdd, NewInsert, NewIndex, NewLineSizes), NewCursor, V, FS, FN, SB, CB, NewUndo, Redo, VS, Copy, Search).
 
-pasteCopyBuffer(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), NewState) :-
-    add_to_undo_stack(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Undo, NewUndo),
-    PT = piece_table(Pieces, Orig, Add, Insert, Index, LineSizes),
-    cursor_xy_to_string_index(C, LineSizes, 0, 0, InsertIndex),
-    string_concat(Insert, Copy, NewInsert),
-    insert_text(piece_table(Pieces, Orig, Add, NewInsert, InsertIndex, LineSizes), NewPT),
-    NewState = editor_state(M, NewPT, C, V, FS, FN, SB, CB, NewUndo, [], VS, Copy, Search).
-
-replaceChar(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Char, NewState) :-
-    add_to_undo_stack(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Undo, NewUndo),
-    PT = piece_table(Pieces, Orig, Add, Insert, _, LineSizes),
-    cursor_xy_to_string_index(C, LineSizes, 0, 0, Index),
-    delete_text(Index, 1, PT, TempPT),
-    TempPT = piece_table(P2, O2, A2, Insert2, _, LS2),
-    string_concat(Insert2, Char, NewInsert),
-    insert_text(piece_table(P2, O2, A2, NewInsert, Index, LS2), NewPT),
-    C = cursor(X, Y),
-    FinalCursor = cursor(X, Y+1),
-    NewState = editor_state(M, NewPT, FinalCursor, V, FS, FN, SB, CB, NewUndo, [], VS, Copy, Search).
-
 undo_editor_state(CurrentState, NewState) :-
     CurrentState = editor_state(_, _, _, _, _, _, _, _, UndoStack, RedoStack, _, _, _),
     ( UndoStack = [] -> NewState = CurrentState
@@ -174,3 +138,137 @@ redo_editor_state(CurrentState, NewState) :-
     RedoHead = editor_state(_, PT, C, V, FS, FN, SB, CB, _, _, VS, Copy, Search),
     NewState = editor_state(normal, PT, C, V, FS, FN, SB, CB, NewUndoStack, RedoTail, VS, Copy, Search)
     ).
+
+paste_copy_buffer(CurrentState, NewState) :-
+    CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
+    add_to_undo_stack(CurrentState, Undo, NewUndo),
+    PT = piece_table(Pieces, Orig, Add, Insert, Index, LineSizes),
+    cursor_xy_to_string_index(C, LineSizes, 0, 0, InsertIndex),
+    string_concat(Insert, Copy, NewInsert),
+    insert_text(piece_table(Pieces, Orig, Add, NewInsert, InsertIndex, LineSizes), NewPT),
+    NewPT = piece_table(NewPieces, Orig, NewAdd, InsertBuffer, InsertIndex, LineSizes),
+    extended_piece_table_to_string(NewPT, Text),
+    string_chars(Text, Chars),
+    get_lines_sizes(Chars, 0, [], FinalLineSizes),
+    FinalPT = piece_table(NewPieces, Orig, NewAdd, InsertBuffer, InsertIndex, FinalLineSizes),
+    NewState = editor_state(M, FinalPT, C, V, FS, FN, SB, CB, NewUndo, [], VS, Copy, Search), !.
+
+remove_line(State, NewState) :-
+    State = editor_state(M, PT, Cursor, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
+    PT = piece_table(Pieces, Orig, Add, Insert, Index, LineSizes),
+    Cursor = cursor(X, Y),
+    add_to_undo_stack(CurrentState, Undo, NewUndo),
+    length(LineSizes, N),
+    LN is N - 1,
+ 
+    sum_list_prefix(LineSizes, X, Sum),
+    ( X =:= LN -> ExtraStart is 0
+    ; ExtraStart is 1),
+    LineStartIndex is Sum + X + ExtraStart,
+    nth0(X, LineSizes, LineSize), !,
+    ( N \= 1 -> ExtraLength is 1
+    ; ExtraLength is 0),
+    LineLength is LineSize + ExtraLength,
+    (N == 1 -> NewLineSizes = [0]
+    ; length(Prefix, X),
+    append(Prefix, [_|Suffix], LineSizes),
+    append(Prefix, Suffix, NewLineSizes)
+    ),
+    (X =:= LN -> NewX is max(0,X-1), NewCursor = cursor(NewX, 0)
+    ; NewCursor = cursor(X, 0)),
+    delete_text(LineStartIndex, LineLength, PT, TempPT),
+    TempPT = piece_table(NewPieces, _, NewAdd, NewInsert, NewIndex, _),
+    NewPT = piece_table(NewPieces, Orig, NewAdd, NewInsert, NewIndex, NewLineSizes),
+    NewState = editor_state(M, NewPT, NewCursor, V, not_saved, FN, SB, CB, NewUndo, [], VS, Copy, Search).
+
+sum_list_prefix(_, 0, 0) :- !.
+sum_list_prefix([H|T], X, Sum) :-
+    X > 0,
+    X1 is X - 1,
+    sum_list_prefix(T, X1, RestSum),
+    Sum is H + RestSum.
+
+run_motion(State, [w], NewState) :- move_to_next_word(State, NewState), !.
+run_motion(State, "b", NewState) :- move_to_previous_word(State, NewState), !.
+run_motion(State, [$], NewState) :- move_to_end_of_line(State, NewState), !.
+run_motion(State, [^], NewState) :- move_to_start_of_line(State, NewState), !.
+run_motion(State, "dd", NewState):- remove_line(State, NewState), !.
+run_motion(State, [x], NewState) :- delete_char(State, NewState), !.
+run_motion(State, [o], NewState) :- create_new_line(State, NewState), !.
+run_motion(State, [u], NewState) :- undo_editorstate(State, NewState), !.
+run_motion(State, [t], NewState) :- redo_editorstate(State, NewState), !.
+run_motion(State, [p], NewState) :- paste_copy_buffer(State, NewState), !.
+run_motion(State, "n", NewState) :- move_to_next_regex_occurence(State,NewState), !.
+run_motion(State, "N", NewState) :- move_to_previous_regex_occurence(State, NewState), !.
+run_motion(State, Motion, NewState) :-
+    atom_chars(Motion, [Head | MotionChars]),
+    last(MotionChars, Last),
+    ( Head == [r] -> replace_char(State, Last, NewState); NewState = State), !.
+
+
+% INCOMPLETO, FAZER AGORA!!!!!!!!!!!!!
+move_to_next_word(CurrentState, NewState) :-
+    CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
+    PT = piece_table(Pieces, Orig, Add, Insert, Index, LineSizes),
+    cursor_xy_to_string_index(C, LineSizes, 0, 0, InsertIndex),
+    extended_piece_table_to_string(PT, FullText),
+    drop_string(StringIndex, FullText, RemainingText),
+    iterate_to_next_blank_space(RemainingText, C, NewCursor),
+    NewState = editor_state(M, PT, NewCursor, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), !.
+
+take_string(N, String, Result) :-
+    string_chars(String, Chars),
+    take_chars(N, Chars, Taken),
+    string_chars(Result, Taken).
+
+take_chars(0, _, []) :- !.
+take_chars(_, [], []) :- !.
+take_chars(N, [H|T], [H|Rest]) :-
+    N > 0,
+    N1 is N - 1,
+    take_chars(N1, T, Rest).
+
+drop_string(N, String, Result) :-
+    string_chars(String, Chars),
+    drop_chars(N, Chars, Dropped),
+    string_chars(Result, Dropped).
+
+drop_chars(0, L, L) :- !.
+drop_chars(_, [], []) :- !.
+drop_chars(N, [_|T], Rest) :-
+    N > 0,
+    N1 is N - 1,
+    drop_chars(N1, T, Rest).
+
+
+iterate_to_next_blank_space([], Cursor, Cursor).
+iterate_to_next_blank_space([Char|Rest], cursor(X, Y), NewCursor) :-
+    (   member(Char, ['\r', '\n']) ->
+    NewX is X + 1,
+    NewCursor = cursor(NewX, 0)
+    ;   
+    Rest = [NextChar|_],
+    member(Char, [' ', '\t']),
+    \+ member(NextChar, [' ', '\t']) ->
+    NewY is Y + 1,
+    NewCursor = cursor(X, NewY)
+    ;   
+    Y1 is Y + 1,
+    iterate_to_next_blank_space(Rest, cursor(X, Y1), NewCursor)
+    ).
+iterate_to_next_blank_space([_], cursor(X, Y), cursor(X, Y1)) :-
+    Y1 is Y + 1.
+
+replace_char(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Char, NewState) :-
+    add_to_undo_stack(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Undo, NewUndo),
+    PT = piece_table(Pieces, Orig, Add, Insert, _, LineSizes),
+    cursor_xy_to_string_index(C, LineSizes, 0, 0, Index),
+    delete_text(Index, 1, PT, TempPT),
+    TempPT = piece_table(P2, O2, A2, Insert2, _, LS2),
+    string_concat(Insert2, Char, NewInsert),
+    insert_text(piece_table(P2, O2, A2, NewInsert, Index, LS2), NewPT),
+    C = cursor(X, Y),
+    FinalCursor = cursor(X, Y+1),
+    NewState = editor_state(M, NewPT, FinalCursor, V, FS, FN, SB, CB, NewUndo, [], VS, Copy, Search).
+
+
