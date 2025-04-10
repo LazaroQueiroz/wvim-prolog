@@ -1,3 +1,7 @@
+% ===============================
+% PROLOG: Viewport
+% ===============================
+
 :- module(editor_viewport, [
     default_viewport/3,
     update_viewport/3,
@@ -11,20 +15,19 @@
 % Default viewport
 default_viewport(Rows, Columns, viewport(Rows, Columns, 0, 0)).
 
-
 % Update viewport
-update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, Y), Updated) :- 
+update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, _), Updated) :- 
   X < InitRow, 
   Diff is InitRow - X, 
   scroll_up(viewport(Rows, Columns, InitRow, InitCol), Diff, Updated).
-update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, Y), Updated) :- 
+update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, _), Updated) :- 
   X - InitRow > Rows - 2, 
   Diff is X - InitRow - Rows + 2, 
   scroll_down(viewport(Rows, Columns, InitRow, InitCol), Diff, Updated).
-update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, Y), Updated) :- 
+update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(_, Y), Updated) :- 
   Y < InitCol, Diff is InitCol - Y, 
   scroll_left(viewport(Rows, Columns, InitRow, InitCol), Diff, Updated).
-update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(X, Y), Updated) :- 
+update_viewport(viewport(Rows, Columns, InitRow, InitCol), cursor(_, Y), Updated) :- 
   Y - InitCol > Columns - 2, 
   Diff is Y - InitCol - Columns + 2, 
   scroll_right(viewport(Rows, Columns, InitRow, InitCol), Diff, Updated).

@@ -1,5 +1,5 @@
 % ======================
-% PROLOG: Editor State + Main Event Loop
+% PROLOG: Main Event Loop
 % ======================
 
 :- module(editor_main, [start_editor/0]).
@@ -37,7 +37,7 @@ editor_state_initialization([Filename | _], Rows, Cols, EditorState)  :-
 
 % ----- Get Terminal Size -----
 get_terminal_size(Rows, Cols) :-
-    shell('stty size', SizeOut),
+    shell('stty size', _),
     read_line_to_codes(user_input, Codes),
     atom_codes(Atom, Codes),
     atomic_list_concat([R, C], ' ', Atom),
@@ -90,14 +90,14 @@ handle_other_inputs("[", _, States, Index, States, NewIndex) :-
 handle_other_inputs("]", _, States, Index, States, NewIndex) :-
     length(States, Len),
     NewIndex is min(Len - 1, Index + 1), !.
-handle_other_inputs("{", CurrentState, States, Index, NewStates, NewIndex) :-
+handle_other_inputs("{", CurrentState, States, _, NewStates, NewIndex) :-
     CurrentState = editor_state(_, _, _, Viewport, _, _, _, _, _, _, _, _, _),
     Viewport = viewport(Rows, Cols, _, _),
     default_editor_state(Rows, Cols, "", NewState),
     append(States, [NewState], NewStates),
     length(NewStates, L),
     NewIndex is L - 1, !.
-handle_other_inputs(Input, CurrentState, States, Index, States, Index).
+handle_other_inputs(_, _, States, Index, States, Index).
 
 
 handle_key_press(State, Char, NewState) :-

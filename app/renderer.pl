@@ -1,3 +1,7 @@
+% ===============================
+% PROLOG: Renderer
+% ===============================
+
 :- module(renderer, [render/1]).
 :- use_module('../src/Editor/extended_piece_table.pl').
 :- use_module('../src/Editor/cursor.pl').
@@ -17,12 +21,11 @@ render_status_bar(Mode, Viewport, Cursor, PieceTable, Filename, StatusBar, Comma
   move_cursor_to(1, Rows),
   write(Mode), write(" | "),
   write("("), write(X), write(","), write(Y), write(")"), write(" | "),
-  piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertIndex, LineSizes) = PieceTable,
+  % piece_table(Pieces, Orig, Add, InsertBuffer, InsertIndex, LineSizes) = PieceTable,
   status_bar(Status, Message) = StatusBar,
   (Status == exception -> write(Message), write(" | ")
   ; Filename == "" -> write("Path: None | ") 
-  ; write("Path: "), write(Filename), write(" | ")
-  ),
+  ; write("Path: "), write(Filename), write(" | ")),
   ( Mode == command -> write(":"), write(CommandBuffer), write(" | Copy: ") ; write("Copy: ")),
   take_string(10, CopyBuffer, CopyBufferToPrint),
   take_string(10, SearchBuffer, SearchBufferToPrint),
@@ -67,7 +70,7 @@ cursor_style(command,      "\e[5 q").
 cursor_style(substitution, "\e[5 q").
 cursor_style(_,            "\e[5 q").
 
-get_line_progress(piece_table(_, _, _, _, _, LineSizes), cursor(X, _), "Top") :- X =:= 0, !.
+get_line_progress(piece_table(_, _, _, _, _, _), cursor(X, _), "Top") :- X =:= 0, !.
 get_line_progress(piece_table(_, _, _, _, _, LineSizes), cursor(X, _), "Bot") :- length(LineSizes, Len), LastIndex is Len - 1, X =:= LastIndex, !.
 get_line_progress(piece_table(_, _, _, _, _, LineSizes), cursor(X, _), Progress) :-
   length(LineSizes, Len),
@@ -111,7 +114,7 @@ render_viewport(PieceTable, viewport(TotalRows, TotalColumns, InitialRow, Initia
   RemainingLines is (TotalRows - 1) - RenderedLines,
   print_lines(VisibleLines, InitialColumn, TotalColumns, RemainingLines).
  
-print_lines([], _, TotalColumns, 0) :- !.
+print_lines([], _, _, 0) :- !.
 print_lines([], _, TotalColumns, Remaining) :-
   writeln("~"),
   NewRemaining is Remaining - 1,

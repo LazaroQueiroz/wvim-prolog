@@ -1,3 +1,7 @@
+% ===============================
+% PROLOG: Mode Manager
+% ===============================
+
 :- module(mode_manager, [
     handle_mode/3,
     handle_command_mode/3,
@@ -17,10 +21,6 @@
 :- use_module('extended_piece_table.pl').
 :- use_module('file_manager.pl').
 :- use_module('motion_handler.pl').
-
-% ===============================
-% PROLOG: Mode Manager
-% ===============================
 
 % ----- Entry Point -----
 handle_mode(State, Input, NewState) :-
@@ -45,11 +45,11 @@ handle_mode_dispatch(_, State, _, State).
 %   NewState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [CurrentStateToUndoStack], RedoStack, VS, CopyText, Search).
 
 add_current_state_to_undo_stack(
-  editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, RedoStack, VS, CopyText, Search), 
+  editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, UndoStack, _, VS, CopyText, Search), 
   editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, NewUndoStack, NewRedoStack, VS, CopyText, Search)
 ) :-
   ( (UndoStack = [LastState | _],
-    LastState = editor_state(_, LastPT, LastCursor, _, _, _, _, _, _, _, _, _, _),
+    LastState = editor_state(_, LastPT, _, _, _, _, _, _, _, _, _, _, _),
     ( PT \= LastPT) ; UndoStack = [])
   ->
     append([editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, [], [], VS, CopyText, Search)], UndoStack, NewUndoStack),
@@ -63,8 +63,7 @@ handle_normal_mode(OldState, "I", NewState) :- handle_normal_mode(OldState, "i",
 handle_normal_mode(OldState, "i", NewState) :- 
     add_current_state_to_undo_stack(OldState, State), 
     State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
-    PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
-    cursor(X, Y) = Cursor,
+    PT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, _, LineSizes),
     cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, NewInsertStartIndex), 
     NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
     AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
@@ -72,7 +71,7 @@ handle_normal_mode(OldState, "i", NewState) :-
 handle_normal_mode(OldState, "A", NewState) :- handle_normal_mode(OldState, "a", NewState).
 handle_normal_mode(OldState, "a", NewState) :- 
   add_current_state_to_undo_stack(OldState, State), 
-  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+  State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
   InsertState = editor_state(insert, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
   update_editor_cursor(InsertState, "l", UpdatedCursorState),
   UpdatedCursorState = editor_state(insert, PT, NewCursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
@@ -82,7 +81,7 @@ handle_normal_mode(OldState, "a", NewState) :-
   AuxiliaryState = editor_state(normal, NewPT, NewCursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
   switch_mode(AuxiliaryState, insert, false, NewState).
 handle_normal_mode(State, "v", NewState) :- 
-  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
+  State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, _, CopyText, Search),
   PT = piece_table(_, _, _, _, _, LineSizes),
   cursor_xy_to_string_index(Cursor, LineSizes, 0, 0, CopyStartIndex),
   AuxiliaryState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, CopyStartIndex, CopyText, Search),
@@ -104,7 +103,7 @@ handle_normal_mode(State, Input, NewState) :- atom_chars(Input, Chars), handle_m
 % Visual Mode Handler
 handle_visual_mode(State, "\u001B", NewState) :- switch_mode(State, normal, false, NewState).
 handle_visual_mode(State, "v", NewState) :- 
-    State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, _, Search),
     PT = piece_table(_, _, _, _, _, Lines),
     cursor_xy_to_string_index(Cursor, Lines, 0, 0, Index),
     extended_piece_table_to_string(PT, Str),
@@ -124,11 +123,11 @@ handle_insert_mode(State, "\e", NewState) :-
 handle_insert_mode(State, "\u007F", NewState) :- handle_delete(State, NewState), !.
 handle_insert_mode(State, Input, NewState) :- 
   member(Input, ["\e[A", "\e[B", "\e[C", "\e[D"]),
-  State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
+  State = editor_state(M, PT, _, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   insert_text(PT, NewPT),
-  NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, InsertStartIndex, LineSizes),
+  NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, _, LineSizes),
   update_editor_cursor(State, Input, AuxiliaryState),
-  AuxiliaryState = editor_state(M, NPT, NewC, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
+  AuxiliaryState = editor_state(M, _, NewC, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch),
   cursor_xy_to_string_index(NewC, LineSizes, 0, 0, NewInsertStartIndex),
   FinalPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
   NewState = editor_state(M, FinalPT, NewC, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch), !.
@@ -139,7 +138,6 @@ handle_insert_mode(State, Input, NewState) :-
 handle_replace_mode(State, "\e", NewState) :- switch_mode(State, normal, false, NewState).
 handle_replace_mode(State, "\u007F", NewState) :- handle_delete(State, NewState).
 handle_replace_mode(OldState, Input, NewState) :- 
-  writeln("HANDLING REPLACE MODE"),
   OldState = editor_state(_, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
   OldStateToUndoStack = editor_state(normal, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
   add_current_state_to_undo_stack(OldStateToUndoStack, State), 
@@ -163,7 +161,7 @@ handle_substitution(OldState, SubstitutedState) :-
   OldState = editor_state(_, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
   OldStateToUndoStack = editor_state(normal, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
   add_current_state_to_undo_stack(OldStateToUndoStack, State), 
-  State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
+  State = editor_state(_, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
   split_string(SearchBuffer, "/", "/", Parts),
   length(Parts, L),
   L > 1,
@@ -174,7 +172,7 @@ handle_substitution(OldState, SubstitutedState) :-
   SubstitutedState = editor_state(normal, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer).
 
 handle_substitution(OldState, NewState) :-
-  OldState = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
+  OldState = editor_state(_, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
   NewState = editor_state(normal, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
   split_string(SearchBuffer, "/", "/", Parts),
   length(Parts, L),
@@ -182,7 +180,7 @@ handle_substitution(OldState, NewState) :-
 
 % Handle insert
 handle_insert(State, Input, NewState) :-
-    State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, _, FN, SB, CB, U, R, VS, Copy, Search),
     string_concat(InsertBuf, Input, NewInsert),
     update_lines_sizes(Input, Cursor, LineSizes, NewLines),
     NewPT = piece_table(Pieces, Orig, Add, NewInsert, Index, NewLines),
@@ -192,7 +190,7 @@ handle_insert(State, Input, NewState) :-
 
 get_direction("\r", "\r").
 get_direction("\u007F", "\u007F").
-get_direction(Input, "l").
+get_direction(_, "l").
 
 % Handle delete
 handle_delete(State, NewState) :-
@@ -202,7 +200,6 @@ handle_delete(State, NewState) :-
     NewLen is Len - 1,
     sub_string(InsertBuf, 0, NewLen, 1, NewInsertBuf),
     update_lines_sizes("\u007F", Cursor, LineSizes, NewLineSizes),
-    Cursor = cursor(X, _),
     NewPT = piece_table(Pieces, Orig, Add, NewInsertBuf, Index, NewLineSizes),
     AuxiliaryState = editor_state(M, NewPT, Cursor, View, not_saved, FN, SB, CB, U, R, VS, Copy, Search),
     update_editor_cursor(AuxiliaryState, "\u007F", NewState). 
@@ -212,7 +209,7 @@ handle_delete(State, NewState) :-
   NewState = State.
 
 handle_delete(State, NewState) :-
-    State = editor_state(M, piece_table(Pieces, Orig, Add, InsertBuf, Index, LineSizes), Cursor, View, _, FN, SB, CB, U, R, VS, Copy, Search),
+    State = editor_state(M, piece_table(Pieces, Orig, Add, _, Index, LineSizes), Cursor, View, _, FN, SB, CB, U, R, VS, Copy, Search),
     delete_text(Index, 1, piece_table(Pieces, Orig, Add, "", Index, LineSizes), TempState),
     TempState = piece_table(NewPieces, NewOrig, NewAdd, NewInsert, NewIndex, _),
     update_editor_cursor(State, "\u007F", AuxiliaryState), 
@@ -223,13 +220,12 @@ handle_delete(State, NewState) :-
 
 % Handle replace
 handle_replace(State, Input, NewState) :- 
-  writeln("HANDLING REPLACE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
   handle_delete(State, AuxiliaryState),
   handle_insert(AuxiliaryState, Input, NewState).
 
 % Switch mode
 switch_mode(State, NewMode, _, NewState) :-
-    State = editor_state(_, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    State = editor_state(_, PT, Cursor, View, FS, FN, SB, _, U, R, VS, Copy, Search),
     NewState = editor_state(NewMode, PT, Cursor, View, FS, FN, SB, "", U, R, VS, Copy, Search).
 
 % Command Mode Handler
@@ -240,7 +236,7 @@ handle_command_mode(State, "\u007F", NewState) :- State = editor_state(M, PT, C,
     sub_string(CB, 0, LenMinusOne, _, NewCB),
     NewState = editor_state(M, PT, C, V, FS, FN, SB, NewCB, U, R, VS, Copy, Search).
 handle_command_mode(State, "\r", NewState) :- 
-    State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    State = editor_state(_, _, _, _, _, _, _, CB, _, _, _, _, _),
     handle_command(State, CB, NewState).
 handle_command_mode(State, Input, NewState) :-
     State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
@@ -263,7 +259,7 @@ trim_leading(L, L).
 
 % Handle Command
 handle_command(State, Input, NewState) :-
-    State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
+    State = editor_state(_, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search),
     atomic_list_concat(Parts, ' ', Input),
     Parts = [Command | RawArgsList],
     atom_string(Command, StringCommand),
@@ -271,7 +267,7 @@ handle_command(State, Input, NewState) :-
     atom_string(RawArgs, StringRawArgs),
     normalize_space(string(Args), StringRawArgs),
     ( StringCommand == "w"  -> save_file(State, false, StringRawArgs, NewState), !
-    ; StringCommand == "w!" -> save_file(State, True, StringRawArgs, NewState)
+    ; StringCommand == "w!" -> save_file(State, true, StringRawArgs, NewState)
     ; StringCommand == "q"  -> quit_editor(State, NewState)
     ; StringCommand == "q!" -> NewState = editor_state(closed, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, Search)
     ; StringCommand == "wq" -> save_and_quit(State, false, Args, NewState)

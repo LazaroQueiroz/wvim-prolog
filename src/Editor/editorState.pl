@@ -1,3 +1,7 @@
+% ======================
+% PROLOG: Editor State
+% ======================
+
 :- module(editor_state, [
     mode/1,
     file_status/1,
@@ -12,10 +16,6 @@
 :- use_module('extended_piece_table.pl').
 :- use_module('cursor.pl').
 :- use_module('viewport.pl').
-
-% ======================
-% PROLOG: Editor State
-% ======================
 
 % ----- Modes and Status -----
 mode(normal).

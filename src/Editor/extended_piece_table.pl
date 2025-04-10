@@ -1,3 +1,7 @@
+% ===============================
+% PROLOG: Extended Piece Table
+% ===============================
+
 :- module(piece_table, [
     create_extended_piece_table/2,
     insert_text/2,
@@ -11,10 +15,6 @@
     get_lines_sizes/4,
     update_lines_sizes/4
 ]).
-
-% ===============================
-% PROLOG: Extended Piece Table
-% ===============================
 
 % Buffer types
 buffer_type(original).
@@ -94,8 +94,8 @@ extended_piece_table_to_line_array(PT, Lines) :-
     split_lines(String, Lines).
 
 % cursor_xy_to_string_index(+Cursor, +LineSizes, +Acc, +LineIndex, -Index)
-cursor_xy_to_string_index(cursor(X, Y), [], Acc, _, Acc).
-cursor_xy_to_string_index(cursor(X, Y), [H|_], Acc, LineIdx, Index) :- 
+cursor_xy_to_string_index(cursor(_, _), [], Acc, _, Acc).
+cursor_xy_to_string_index(cursor(X, Y), [_|_], Acc, LineIdx, Index) :- 
   LineIdx =:= X,
   Index is Acc + Y + X.
 cursor_xy_to_string_index(cursor(X, Y), [H|T], Acc, LineIdx, Index) :-
@@ -127,7 +127,7 @@ update_lines_sizes("\u007F", cursor(X, 0), LineSizes, New) :-
     (Before0 = [] -> Before = [], Last = 0 ; append(Before, [Last], Before0)),
     NewSize is Cur + Last,
     append(Before, [NewSize|After], New).
-update_lines_sizes("\u007F", cursor(X, Y), LineSizes, New) :-
+update_lines_sizes("\u007F", cursor(X, _), LineSizes, New) :-
     split_at(X, LineSizes, Before, [Cur|After]),
     NewSize is Cur - 1,
     append(Before, [NewSize|After], New).
