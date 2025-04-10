@@ -59,6 +59,7 @@ add_current_state_to_undo_stack(
   ).
 
 % Normal Mode Handler
+handle_normal_mode(OldState, "I", NewState) :- handle_normal_mode(OldState, "i", NewState). 
 handle_normal_mode(OldState, "i", NewState) :- 
     add_current_state_to_undo_stack(OldState, State), 
     State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
@@ -68,6 +69,7 @@ handle_normal_mode(OldState, "i", NewState) :-
     NewPT = piece_table(Pieces, OriginalBuffer, AddBuffer, InsertBuffer, NewInsertStartIndex, LineSizes),
     AuxiliaryState = editor_state(Mode, NewPT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     switch_mode(AuxiliaryState, insert, false, NewState).
+handle_normal_mode(OldState, "A", NewState) :- handle_normal_mode(OldState, "a", NewState).
 handle_normal_mode(OldState, "a", NewState) :- 
   add_current_state_to_undo_stack(OldState, State), 
   State = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
