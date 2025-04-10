@@ -282,12 +282,14 @@ run_motion(State, [o], NewState) :- create_new_line(State, NewState), !.
 run_motion(State, [u], NewState) :- undo_editorstate(State, NewState), !.
 run_motion(State, [t], NewState) :- redo_editorstate(State, NewState), !.
 run_motion(State, [p], NewState) :- paste_copy_buffer(State, NewState), !.
-run_motion(State, [n], NewState) :- move_to_next_regex_occurrence(State,NewState), !.
-%run_motion(State, [N], NewState) :- move_to_previous_regex_occurrence(State, NewState), !.
+run_motion(State, [n], NewState) :- 
+  move_to_next_regex_occurrence(State, NewState), !.
+run_motion(State, [N], NewState) :- move_to_previous_regex_occurrence(State, NewState), !.
 run_motion(State, Motion, NewState) :-
-    atom_chars(Motion, [Head | MotionChars]),
+    Motion = [Head | MotionChars],
     last(MotionChars, Last),
     ( Head == [r] -> replace_char(State, Last, NewState); NewState = State), !.
+run_motion(State, _, State).
 
 
 move_to_next_word(CurrentState, NewState) :-
@@ -302,23 +304,27 @@ move_to_next_word(CurrentState, NewState) :-
 
 move_to_next_regex_occurrence(State, State) :- 
   State = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), 
-  Search = "", !.
+  Search == "".
 move_to_next_regex_occurrence(CurrentState, NewState) :-
   CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
-  Search \= "",
+  not(Search == ""),
   PT = piece_table(Pieces, Orig, Add, Insert, Index, LineSizes),
   cursor_xy_to_string_index(C, LineSizes, 0, 0, InsertIndex),
   extended_piece_table_to_string(PT, FullText),
   drop_string(InsertIndex, FullText, RemainingText),
   drop_string(1, RemainingText, RemainingTextMinusOne),
-  (sub_string(RemainingTextMinusOne, _, _, _, Search) -> NewCursor = C ; iterate_to_next_regex_occurrence(Search, RemainingTextMinusOne, C, NewCursor),
+  C = cursor(X, Y),
+  NY is Y + 1,
+  NC = cursor(X, NY),
+  (sub_string(RemainingTextMinusOne, _, _, _, Search) -> iterate_to_next_regex_occurrence(Search, RemainingTextMinusOne, NC, NewCursor) ; NewCursor = C),
   NewState = editor_state(M, PT, NewCursor, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), !.
 
 iterate_to_next_regex_occurrence(_, "", Cursor, Cursor).
 iterate_to_next_regex_occurrence(Regex, Text, Cursor, Cursor) :-
   string_length(Regex, Len),
-  sub_string(Text, 0, Len, _, Search).
+  sub_string(Text, 0, Len, A, Regex).
 iterate_to_next_regex_occurrence(Regex, Text, Cursor, NewCursor) :-
+  cursor(X, Y) = Cursor,
   string_chars(Text, [Char | Rest]),
   string_chars(RestStr, Rest),
   ( member(Char, ['\n', '\r']) ->
@@ -326,6 +332,46 @@ iterate_to_next_regex_occurrence(Regex, Text, Cursor, NewCursor) :-
       iterate_to_next_regex_occurrence(Regex, RestStr, cursor(NewX, 0), NewCursor)
   ; NewY is Y + 1,
     iterate_to_next_regex_occurrence(Regex, RestStr, cursor(X, NewY), NewCursor)
+  ).
+
+move_to_previous_regex_occurrence(State, State) :- 
+  State = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), 
+  Search == "".
+move_to_previous_regex_occurrence(CurrentState, NewState) :-
+  CurrentState = editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search),
+  not(Search == ""),
+  PT = piece_table(Pieces, Orig, Add, Insert, Index, LineSizes),
+  cursor_xy_to_string_index(C, LineSizes, 0, 0, InsertIndex),
+  extended_piece_table_to_string(PT, FullText),
+  InsertIndexMinusOne is InsertIndex - 1,
+  take_string(InsertIndex, FullText, PreviousText),
+  take_string(InsertIndexMinusOne, FullText, PreviousTextMinusOne),
+  (sub_string(PreviousTextMinusOne, _, _, _, Search) -> iterate_to_previous_regex_occurrence(Search, PreviousText, C, NewCursor, LineSizes) ; NewCursor = C),
+  NewState = editor_state(M, PT, NewCursor, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), !.
+
+iterate_to_previous_regex_occurrence(_, "", Cursor, Cursor, _).
+iterate_to_previous_regex_occurrence(Regex, Text, Cursor, NewCursor, _) :-
+  Cursor = cursor(X, Y),
+  string_length(Regex, Len),
+  string_length(Text, TextLen),
+  PreviousStartIndex is TextLen - Len,
+  sub_string(Text, PreviousStartIndex, Len, A, Regex),
+  NY is max(0, Y - Len),
+  NewCursor = cursor(X, NY).
+iterate_to_previous_regex_occurrence(Regex, Text, Cursor, NewCursor, LineSizes) :-
+  cursor(X, Y) = Cursor,
+  string_chars(Text, Chars),
+  last(Chars, LastChar),
+  append(Init, [LastChar], Chars),
+  string_chars(InitStr, Init),
+  ( member(LastChar, ['\n', '\r']) ->
+      NewX is max(0, X - 1),
+      nth0(NewX, LineSizes, AboveLineSize),
+      AboveLineSizeMinusOne is max(0, AboveLineSize - 1),
+      NewY is AboveLineSize,
+      iterate_to_previous_regex_occurrence(Regex, InitStr, cursor(NewX, NewY), NewCursor, LineSizes)
+  ; NewY is max(0, Y - 1),
+    iterate_to_previous_regex_occurrence(Regex, InitStr, cursor(X, NewY), NewCursor, LineSizes)
   ).
 
 replace_char(editor_state(M, PT, C, V, FS, FN, SB, CB, Undo, Redo, VS, Copy, Search), Char, NewState) :-

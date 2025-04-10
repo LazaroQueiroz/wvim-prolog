@@ -25,9 +25,6 @@
 % ===============================
 
 % ----- Entry Point -----
-handle_mode(State, "[", State) :- !.
-handle_mode(State, "]", State) :- !.
-handle_mode(State, "}", State) :- !.
 handle_mode(State, Input, NewState) :-
     State = editor_state(Mode, _, _, _, _, _, _, _, _, _, _, _, _),
     handle_mode_dispatch(Mode, State, Input, NewState).
@@ -181,7 +178,9 @@ handle_substitution_mode(State, Input, NewState) :-
     NewState = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, NewSearch).
 
 handle_substitution(OldState, SubstitutedState) :-
-  add_current_state_to_undo_stack(OldState, State), 
+  OldState = editor_state(_, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
+  OldStateToUndoStack = editor_state(normal, OldPT, OldC, OldV, OldFS, OldFN, OldSB, OldCB, OldU, OldR, OldVS, OldCopy, OldSearch),
+  add_current_state_to_undo_stack(OldStateToUndoStack, State), 
   State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
   split_string(SearchBuffer, "/", "/", Parts),
   length(Parts, L),
@@ -192,8 +191,9 @@ handle_substitution(OldState, SubstitutedState) :-
   create_extended_piece_table(SubstitutedStr, NewPT),
   SubstitutedState = editor_state(normal, NewPT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer).
 
-handle_substitution(OldState, OldState) :-
-  State = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
+handle_substitution(OldState, NewState) :-
+  OldState = editor_state(M, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
+  NewState = editor_state(normal, PT, C, V, FS, FN, SB, CB, U, R, VS, Copy, SearchBuffer),
   split_string(SearchBuffer, "/", "/", Parts),
   length(Parts, L),
   L =< 1.

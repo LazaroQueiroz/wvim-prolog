@@ -17,7 +17,6 @@
 
 % ----- Start Editor -----
 start_editor :-
-  %tty_clear,
   tty_size(Rows, Cols),
   current_prolog_flag(argv, Args),
   editor_state_initialization(Args, Rows, Cols, EditorState),
@@ -49,9 +48,11 @@ get_terminal_size(Rows, Cols) :-
 event_loop(States, Index, Args) :-
     nth0(Index, States, CurrentState),
     render(CurrentState),
+    CurrentState = editor_state(CurMode, _, _, _, _, _, _, _, _, _, _, _, _),
     read_key(Code),
     string_codes(Input, Code),
-    handle_other_inputs(Input, CurrentState, States, Index, NewStates, NewIndex), 
+    (CurMode == normal -> handle_other_inputs(Input, CurrentState, States, Index, NewStates, NewIndex) 
+    ; NewStates = States, NewIndex = Index),
     handle_mode(CurrentState, Input, UpdatedState),
     UpdatedState = editor_state(Mode, PT, Cursor, View, FS, FN, SB, CB, U, R, VS, CopyText, Search),
     update_viewport(View, Cursor, UpdatedViewport),
