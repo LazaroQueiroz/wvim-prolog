@@ -18,6 +18,7 @@
 :- use_module('editorState.pl').
 :- use_module('extended_piece_table.pl').
 :- use_module('file_manager.pl').
+:- use_module('motion_handler.pl').
 
 % ===============================
 % PROLOG: Mode Manager
