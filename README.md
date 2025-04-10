@@ -2,10 +2,9 @@
 Worse Vim is a text editor, inspired by Vim, written in Haskell and Prolog. Created as a project for the PLP course (Programming Language Paradigms), managed by Everton L. G. Alves. 
 
 ---
-## How To Run It
-1. After you cloned, go to the source file of the project (the one that contains app/ and src/ folders).
-2. Then, run `./wvim <nome-do-arquivo || vazio>`.
-3. Now, you can use Wvim at your will.
+
+![Haskell](https://img.shields.io/badge/Haskell-Done-green?style=flat-square&logo=haskell&labelColor=%235D4F85) 
+![Prolog](https://img.shields.io/badge/Prolog-Done-green?style=flat-square&labelColor=%23184e60)
 
 ## 🛠️ Features
 ✅ Basic cursor movement
@@ -19,6 +18,18 @@ Worse Vim is a text editor, inspired by Vim, written in Haskell and Prolog. Crea
 ✅ Implementation without pre-built text components
 
 ✅ CLI-based interactive interface
+
+## 📥 Requirements
+Follow the step-by-step below in order to get it working:
+
+### 🔹 Prolog
+1. After you cloned, go to the source file of the project (the one that contains app/ and src/ folders).
+2. Then, run `./wvim <nome-do-arquivo || vazio>`.
+3. Now, you can use Wvim at your will.
+
+### 🔹 Haskell
+1. Access the link below and follow the instructions there.
+2. [wvim](https://github.com/LazaroQueiroz/wvim)
 
 ## 📌 Development Team
 * [Lázaro Queiroz do Nascimento](https://github.com/LazaroQueiroz)
